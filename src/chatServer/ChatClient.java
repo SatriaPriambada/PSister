@@ -80,17 +80,15 @@ public class ChatClient implements Runnable
                     streamOut.writeUTF(jsonObject.toString());
                     streamOut.flush();
                 } else if (read.contains("client_address")) {
-                    /*JSONObject jsonObject = new JSONObject();
+                    JSONObject jsonObject = new JSONObject();
                     try {
-                        jsonObject.put("method", "leave");
-                        jsonObject.put("udp_address", localIP);
-                        jsonObject.put("udp_port", localPort);
+                        jsonObject.put("method", "client_address");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                     System.out.println(jsonObject);
                     streamOut.writeUTF(jsonObject.toString());
-                    streamOut.flush();*/
+                    streamOut.flush();
                 } else if (read.equals("toClient")){
                     System.out.println("IP target :" + listClientIP[0] + " port : " + listClientPort[0]);
                     transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);

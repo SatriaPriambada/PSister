@@ -95,7 +95,10 @@ public class ChatServer implements Runnable {
                         clientAddr = jsonObject.getString("udp_address");
                         clientPort = jsonObject.getInt("udp_port");
                         leaveClient(clientAddr, clientPort);
-
+                        break;
+                    case "client_address":
+                        clientAddress();
+                        break;
                     default:
                         break;
                 }
@@ -158,7 +161,9 @@ public class ChatServer implements Runnable {
     }
 
     // Method di handle
-    // Join
+
+    /*-------------------------- Method Join ---------------------------*/
+
     void joinClient(String username, String udpAddress, int udpPort){
         System.out.println("Username: " + username);
         System.out.println("Address: " + udpAddress);
@@ -201,6 +206,8 @@ public class ChatServer implements Runnable {
             playerCount++;
         }
     }
+
+    /*-------------------------- Method Leave ---------------------------*/
 
     void leaveClient(String udpAddress, int udpPort){
         System.out.println("Address: " + udpAddress);
@@ -250,4 +257,36 @@ public class ChatServer implements Runnable {
         }
     }
 
+    /*-------------------------- Method Client Address ---------------------------*/
+    void clientAddress(){
+        JSONArray jsonArray = new JSONArray();
+        for (int j = 0; j < playerCount; j++){
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("player_id", j);
+                jsonObject.put("is_alive", players[j].getAlive());
+                jsonObject.put("address", players[j].getAddrIp());
+                jsonObject.put("port", players[j].getAddrPort());
+                jsonObject.put("username", players[j].getUsername());
+
+                jsonArray.put(jsonObject);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        for (int i = 0; i < playerCount; i++){
+            JSONObject json = new JSONObject();
+            try {
+                json.put("status", "ok");
+                json.put("clients", jsonArray);
+                String msg = new String(String.valueOf(json));
+                clients[findClient(players[i].getAddrPort())].send(msg);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
 }
