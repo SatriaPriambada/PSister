@@ -11,17 +11,18 @@ public class ChatServer implements Runnable {
     private ChatServerThread clients[] = new ChatServerThread[50];
     private ServerSocket server = null;
     private Thread       thread = null;
+
+    private final int PLAYER_SIZE = 50;
+
     private int clientCount = 0;
-    private int[] listIsAlive = new int[50];
-    private String[] listIP = new String[50];
-    private int[] listPort = new int[50];
-    private String[] listUsername = new String[50];
-    private int[] listID = new int[50];
+    private Player[] players = new Player[PLAYER_SIZE];
+//    private int[] listIsAlive = new int[50];
+//    private String[] listIP = new String[50];
+//    private int[] listPort = new int[50];
+//    private String[] listUsername = new String[50];
+//    private int[] listID = new int[50];
 
     public ChatServer(int port) {
-        for(int i=0; i<50; i++){
-            listUsername[i] = "";
-        }
         try {
             System.out.println("Binding to port " + port + ", please wait  ...");
             server = new ServerSocket(port);
@@ -83,6 +84,9 @@ public class ChatServer implements Runnable {
                         int clientPort = jsonObject.getInt("udp_port");
                         joinClient(clientUname, clientAddr, clientPort);
                         break;
+                    case "get_server":
+
+                        break;
                     default:
                         break;
                 }
@@ -120,14 +124,15 @@ public class ChatServer implements Runnable {
             System.out.println("Client accepted: " + socket);
             clients[clientCount] = new ChatServerThread(this, socket);
             try {
-                listIP[clientCount] = socket.getInetAddress().getHostAddress();
-                listIsAlive[clientCount] = 1;
-                listPort[clientCount] = socket.getPort();
-                System.out.println("player_id " + clientCount + " is_alive " + listIsAlive[clientCount] + " address " + listIP[clientCount] + " port " + listPort[clientCount] );
+                String clientIp = socket.getInetAddress().getHostAddress();
+                int clientPort = socket.getPort();
+                players[clientCount] = new Player(clientIp, clientPort);
+
+                System.out.println(players[clientCount]);
                 clients[clientCount].open();
                 clients[clientCount].start();
                 clientCount++;
-
+                System.out.println(clientCount);
             } catch(IOException ioe) {
                 System.out.println("Error opening thread: " + ioe); }
         }
@@ -153,10 +158,13 @@ public class ChatServer implements Runnable {
         int currentClient = findClient(udpPort);
         int i = 0;
         boolean userExists = false;
-        while(i<50 && !userExists){
-            userExists = listUsername[i].equals(username);
+        while(i<clientCount && !userExists){
+            if(players[i].getUsername() != null) {
+                userExists = players[i].getUsername().equals(username);
+            }
             i++;
         }
+
         if(userExists){
             JSONObject jsonObject = new JSONObject();
             try {

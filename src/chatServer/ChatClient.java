@@ -40,21 +40,33 @@ public class ChatClient implements Runnable
             try {
                 String read = console.readLine();
                 if (read.equals("server")) {
-                    streamOut.writeUTF("127.0.0.1:"+localPort);
+                    JSONObject jsonObject = new JSONObject();
+                    try {
+                        jsonObject.put("method", "get_server");
+                        jsonObject.put("server", "127.0.0.1");
+                        jsonObject.put("port", localPort);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    streamOut.writeUTF(jsonObject.toString());
                     streamOut.flush();
                 } else if (read.contains("join")) {
                     JSONObject jsonObject = new JSONObject();
-                    try {
-                        jsonObject.put("method", "join");
-                        jsonObject.put("username", read.substring(5));
-                        jsonObject.put("udp_address", localIP);
-                        jsonObject.put("udp_port", localPort);
-                    } catch (Exception e){
-                        e.printStackTrace();
+                    if(read.length() > 5) {
+                        try {
+                            jsonObject.put("method", "join");
+                            jsonObject.put("username", read.substring(5));
+                            jsonObject.put("udp_address", localIP);
+                            jsonObject.put("udp_port", localPort);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println(jsonObject);
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
+                    } else {
+                        System.out.println("Please input username");
                     }
-                    System.out.println(jsonObject);
-                    streamOut.writeUTF(jsonObject.toString());
-                    streamOut.flush();
                 } else if (read.equals("toClient")){
                     System.out.println("IP target :" + listClientIP[0] + " port : " + listClientPort[0]);
                     transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);
