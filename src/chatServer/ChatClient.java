@@ -67,6 +67,30 @@ public class ChatClient implements Runnable
                     } else {
                         System.out.println("Please input username");
                     }
+                } else if (read.contains("leave")) {
+                    JSONObject jsonObject = new JSONObject();
+                    try {
+                        jsonObject.put("method", "leave");
+                        jsonObject.put("udp_address", localIP);
+                        jsonObject.put("udp_port", localPort);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println(jsonObject);
+                    streamOut.writeUTF(jsonObject.toString());
+                    streamOut.flush();
+                } else if (read.contains("client_address")) {
+                    /*JSONObject jsonObject = new JSONObject();
+                    try {
+                        jsonObject.put("method", "leave");
+                        jsonObject.put("udp_address", localIP);
+                        jsonObject.put("udp_port", localPort);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println(jsonObject);
+                    streamOut.writeUTF(jsonObject.toString());
+                    streamOut.flush();*/
                 } else if (read.equals("toClient")){
                     System.out.println("IP target :" + listClientIP[0] + " port : " + listClientPort[0]);
                     transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);
