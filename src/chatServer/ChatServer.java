@@ -62,23 +62,20 @@ public class ChatServer implements Runnable {
     }
 
     public synchronized void handle(int ID, String input) {
-        JSONObject jsonObj = null;
-        try {
-            jsonObj = new JSONObject("{\"IP\":\""+ listIP[0] +"\",\"port\":\""+ listPort[0] + "\"}");
-            System.out.println(jsonObj);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
         if (input.equals(".bye")) {
             clients[findClient(ID)].send(".bye");
             remove(ID);
         } else {
-            for (int i = 0; i < clientCount; i++) {
-                String msg = new String(String.valueOf(jsonObj));
-                clients[i].send(msg);
+            JSONObject jsonObj = null;
+            try {
+                jsonObj = new JSONObject("{\"IP\":\""+ listIP[0] +"\",\"port\":\""+ listPort[0] + "\"}");
+                System.out.println(jsonObj);
+
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
+            String msg = new String(String.valueOf(jsonObj));
+            clients[findClient(ID)].send(msg);
         }
     }
 

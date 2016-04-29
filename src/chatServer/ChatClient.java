@@ -44,8 +44,8 @@ public class ChatClient implements Runnable
                     streamOut.flush();
                 } else {
                     System.out.println("IP target :" + listClientIP[0] + " port : " + listClientPort[0]);
-                    //transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);
-                    //transmitterUDP.send("Hello World!");
+                    transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);
+                    transmitterUDP.send("Hello World!");
                 }
             } catch(IOException e) {
                 System.out.println("Sending error: " + e.getMessage());
@@ -63,7 +63,11 @@ public class ChatClient implements Runnable
             try {
                 JSONObject jsonObject = new JSONObject(msg);
                 System.out.println(jsonObject.get("port"));
+                String s = (String) jsonObject.get("port");
+                listClientPort[0] = Integer.valueOf(s);
                 System.out.println(jsonObject.get("IP"));
+                listClientIP[0] = (String) jsonObject.get("IP");
+
             } catch (JSONException e) {
                 e.printStackTrace();
             }

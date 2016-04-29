@@ -33,18 +33,11 @@ public class UDPTransmitter extends Thread{
             DatagramSocket datagramSocket = new DatagramSocket();
             UnreliableSender unreliableSender = new UnreliableSender(datagramSocket);
 
-            while (true)
-            {
-                String sentence = message;
-                if (sentence.equals("quit"))
-                {
-                    break;
-                }
+            String sentence = message;
 
-                byte[] sendData = sentence.getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, portTarget);
-                unreliableSender.send(sendPacket);
-            }
+            byte[] sendData = sentence.getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, portTarget);
+            unreliableSender.send(sendPacket);
             datagramSocket.close();
         } catch (UnknownHostException e) {
             e.printStackTrace();
