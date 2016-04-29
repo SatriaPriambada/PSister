@@ -14,7 +14,12 @@ public class ChatServer implements Runnable {
 
     private final int PLAYER_SIZE = 50;
 
+    // a number of clients who connects to server
     private int clientCount = 0;
+
+    // a number of clients who has joined the game
+    private int playerCount = 0;
+
     private Player[] players = new Player[PLAYER_SIZE];
 //    private int[] listIsAlive = new int[50];
 //    private String[] listIP = new String[50];
@@ -158,7 +163,7 @@ public class ChatServer implements Runnable {
         int currentClient = findClient(udpPort);
         int i = 0;
         boolean userExists = false;
-        while(i<clientCount && !userExists){
+        while(i<playerCount && !userExists){
             if(players[i].getUsername() != null) {
                 userExists = players[i].getUsername().equals(username);
             }
@@ -178,16 +183,18 @@ public class ChatServer implements Runnable {
             }
         } else {
             // user does not exist
+            players[playerCount].setUsername(username);
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("status", "ok");
-                jsonObject.put("player_id", 0);
+                jsonObject.put("player_id", playerCount);
 
                 String msg = new String(String.valueOf(jsonObject));
                 clients[findClient(udpPort)].send(msg);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
+            playerCount++;
         }
     }
 }
