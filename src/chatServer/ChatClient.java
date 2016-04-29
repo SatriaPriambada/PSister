@@ -21,12 +21,12 @@ public class ChatClient implements Runnable
     private int[] listClientPort = new int[50];
     private String[] listClientIP = new String[50];
 
-
     public ChatClient(String serverName, int serverPort) {
         System.out.println("Establishing connection. Please wait ...");
         try {
             socket = new Socket(serverName, serverPort);
             System.out.println("Connected: " + socket);
+            localIP = socket.getLocalAddress().getHostAddress();
             localPort = socket.getLocalPort();
             start();
         } catch(UnknownHostException uhe) {
@@ -42,7 +42,20 @@ public class ChatClient implements Runnable
                 if (read.equals("server")) {
                     streamOut.writeUTF("127.0.0.1:"+localPort);
                     streamOut.flush();
-                } else {
+                } else if (read.contains("join")) {
+                    JSONObject jsonObject = new JSONObject();
+                    try {
+                        jsonObject.put("method", "join");
+                        jsonObject.put("username", read.substring(5));
+                        jsonObject.put("udp_address", localIP);
+                        jsonObject.put("udp_port", localPort);
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                    System.out.println(jsonObject);
+                    streamOut.writeUTF(jsonObject.toString());
+                    streamOut.flush();
+                } else if (read.equals("toClient")){
                     System.out.println("IP target :" + listClientIP[0] + " port : " + listClientPort[0]);
                     transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);
                     transmitterUDP.send("Hello World!");
@@ -62,11 +75,14 @@ public class ChatClient implements Runnable
             System.out.println("Server message : " + msg);
             try {
                 JSONObject jsonObject = new JSONObject(msg);
-                System.out.println(jsonObject.get("port"));
-                String s = (String) jsonObject.get("port");
-                listClientPort[0] = Integer.valueOf(s);
-                System.out.println(jsonObject.get("IP"));
-                listClientIP[0] = (String) jsonObject.get("IP");
+                if(jsonObject.get("status") != null){
+                    System.out.println("Status: " + jsonObject.getString("status"));
+                }
+//                System.out.println(jsonObject.get("port"));
+//                String s = (String) jsonObject.get("port");
+//                listClientPort[0] = Integer.valueOf(s);
+//                System.out.println(jsonObject.get("IP"));
+//                listClientIP[0] = (String) jsonObject.get("IP");
 
             } catch (JSONException e) {
                 e.printStackTrace();

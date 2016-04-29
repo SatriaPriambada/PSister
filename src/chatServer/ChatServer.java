@@ -15,9 +15,13 @@ public class ChatServer implements Runnable {
     private int[] listIsAlive = new int[50];
     private String[] listIP = new String[50];
     private int[] listPort = new int[50];
-
+    private String[] listUsername = new String[50];
+    private int[] listID = new int[50];
 
     public ChatServer(int port) {
+        for(int i=0; i<50; i++){
+            listUsername[i] = "";
+        }
         try {
             System.out.println("Binding to port " + port + ", please wait  ...");
             server = new ServerSocket(port);
@@ -66,16 +70,28 @@ public class ChatServer implements Runnable {
             clients[findClient(ID)].send(".bye");
             remove(ID);
         } else {
-            JSONObject jsonObj = null;
+            System.out.println(input);
             try {
-                jsonObj = new JSONObject("{\"IP\":\""+ listIP[0] +"\",\"port\":\""+ listPort[0] + "\"}");
-                System.out.println(jsonObj);
+                JSONObject jsonObject = new JSONObject(input);
+                String method = jsonObject.getString("method");
 
+                switch (method){
+                    case "join":
+                        // Join Client
+                        String clientUname = jsonObject.getString("username");
+                        String clientAddr = jsonObject.getString("udp_address");
+                        int clientPort = jsonObject.getInt("udp_port");
+                        joinClient(clientUname, clientAddr, clientPort);
+                        break;
+                    default:
+                        break;
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            String msg = new String(String.valueOf(jsonObj));
-            clients[findClient(ID)].send(msg);
+
+//            String msg = new String(String.valueOf(jsonObj));
+//            clients[findClient(ID)].send(msg);
         }
     }
 
@@ -125,5 +141,45 @@ public class ChatServer implements Runnable {
             System.out.println("Usage: java ChatServer port");
         else
             server = new ChatServer(Integer.parseInt(args[0]));
+    }
+
+    // Method di handle
+    // Join
+    void joinClient(String username, String udpAddress, int udpPort){
+        System.out.println("Username: " + username);
+        System.out.println("Address: " + udpAddress);
+        System.out.println("Port: " + udpPort);
+
+        int currentClient = findClient(udpPort);
+        int i = 0;
+        boolean userExists = false;
+        while(i<50 && !userExists){
+            userExists = listUsername[i].equals(username);
+            i++;
+        }
+        if(userExists){
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("status", "fail");
+                jsonObject.put("description", "user exists");
+
+                String msg = new String(String.valueOf(jsonObject));
+                clients[findClient(udpPort)].send(msg);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        } else {
+            // user does not exist
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("status", "ok");
+                jsonObject.put("player_id", 0);
+
+                String msg = new String(String.valueOf(jsonObject));
+                clients[findClient(udpPort)].send(msg);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
