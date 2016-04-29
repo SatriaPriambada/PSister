@@ -41,6 +41,7 @@ public class TCPTransmitter implements Runnable {
             Scanner in = new Scanner(System.in);
             while(true){
                 String transMessage = in.nextLine();
+                System.out.println(transMessage);
                 PS.println(transMessage);
             }
 
