@@ -38,10 +38,13 @@ public class TCPReceiver implements Runnable{
         try {
             InetAddress addr = InetAddress.getByName(IPReceived);
             ServerSocket serverSocket = new ServerSocket(port, backlog, addr);
-            InputStreamReader IR = new InputStreamReader(sockets[1].getInputStream());
+
+            sockets = serverSocket.accept();
+
+            InputStreamReader IR = new InputStreamReader(sockets.getInputStream());
             BufferedReader BR = new BufferedReader(IR);
+
             while(waitReady) {
-                sockets[1] = serverSocket.accept();
 
                 String message = BR.readLine();
                 if (message != null) {
@@ -63,5 +66,5 @@ public class TCPReceiver implements Runnable{
     private String IPReceived;
     private int port;
     private Thread t;
-    public static Socket[] sockets;
+    public static Socket sockets;
 }
