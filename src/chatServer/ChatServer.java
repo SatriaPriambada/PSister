@@ -3,9 +3,13 @@ package chatServer;
 /**
  * Created by Satria on 4/28/2016.
  */
-import java.net.*;
-import java.io.*;
-import org.json.*;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 public class ChatServer implements Runnable {
     private ChatServerThread clients[] = new ChatServerThread[50];
@@ -293,6 +297,7 @@ public class ChatServer implements Runnable {
             try {
                 json.put("status", "ok");
                 json.put("clients", jsonArray);
+                json.put("description", "list of clients retrieved");
                 String msg = new String(String.valueOf(json));
                 clients[findClient(players[i].getAddrPort())].send(msg);
             } catch (JSONException e) {
