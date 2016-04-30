@@ -16,18 +16,17 @@ public class ChatClient implements Runnable
     private ChatClientThread client    = null;
     private UDPReceiver clientUDP      = null;
     private UDPTransmitter transmitterUDP = null;
-    private int localPort;
-    private String localIP;
-    private int[] listClientPort = new int[50];
-    private String[] listClientIP = new String[50];
+    private Player player;
+    private Player[] players = new Player [ChatServer.PLAYER_SIZE];
 
     public ChatClient(String serverName, int serverPort) {
         System.out.println("Establishing connection. Please wait ...");
         try {
             socket = new Socket(serverName, serverPort);
             System.out.println("Connected: " + socket);
-            localIP = socket.getLocalAddress().getHostAddress();
-            localPort = socket.getLocalPort();
+            String localIP = socket.getLocalAddress().getHostAddress();
+            int localPort = socket.getLocalPort();
+            player = new Player(localIP, localPort);
             start();
         } catch(UnknownHostException uhe) {
             System.out.println("Host unknown: " + uhe.getMessage());
@@ -39,38 +38,40 @@ public class ChatClient implements Runnable
         while (thread != null) {
             try {
                 String read = console.readLine();
+                JSONObject jsonObject = new JSONObject();
                 if (read.equals("server")) {
-                    JSONObject jsonObject = new JSONObject();
                     try {
                         jsonObject.put("method", "get_server");
                         jsonObject.put("server", "127.0.0.1");
-                        jsonObject.put("port", localPort);
+                        jsonObject.put("port", "9876");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                     streamOut.writeUTF(jsonObject.toString());
                     streamOut.flush();
                 } else if (read.contains("join")) {
-                    JSONObject jsonObject = new JSONObject();
                     if(read.length() > 5) {
+                        String username = read.substring(5);
                         try {
                             jsonObject.put("method", "join");
-                            jsonObject.put("username", read.substring(5));
-                            jsonObject.put("udp_address", localIP);
-                            jsonObject.put("udp_port", localPort);
+                            jsonObject.put("username", username);
+                            jsonObject.put("udp_address", player.getAddrIp());
+                            jsonObject.put("udp_port", player.getAddrPort());
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
+                        player.setUsername(username);
                         System.out.println(jsonObject);
                         streamOut.writeUTF(jsonObject.toString());
                         streamOut.flush();
                     } else {
                         System.out.println("Please input username");
                     }
-                } else if (read.contains("leave")) {
-                    JSONObject jsonObject = new JSONObject();
+                } else if (read.equals("leave")) {
                     try {
                         jsonObject.put("method", "leave");
+                        jsonObject.put("udp_address", player.getAddrPort());
+                        jsonObject.put("udp_port", player.getAddrIp());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -78,7 +79,21 @@ public class ChatClient implements Runnable
                     streamOut.writeUTF(jsonObject.toString());
                     streamOut.flush();
                 } else if (read.contains("client_address")) {
-                    JSONObject jsonObject = new JSONObject();
+
+                } else if (read.equals("ready")){
+                    // Check if player has joined the game by checking player_id
+                    if (player.getId() != Player.ID_NOT_SET){
+                        try {
+                            jsonObject.put("method", "ready");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
+                    } else {
+                        System.out.println("You have not joined the game");
+                    }
+                } else if (read.equals("client_address")) {
                     try {
                         jsonObject.put("method", "client_address");
                     } catch (Exception e) {
@@ -88,9 +103,9 @@ public class ChatClient implements Runnable
                     streamOut.writeUTF(jsonObject.toString());
                     streamOut.flush();
                 } else if (read.equals("toClient")){
-                    System.out.println("IP target :" + listClientIP[0] + " port : " + listClientPort[0]);
-                    transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);
-                    transmitterUDP.send("Hello World!");
+//                    System.out.println("IP target :" + listClientIP[0] + " port : " + listClientPort[0]);
+//                    transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);
+//                    transmitterUDP.send("Hello World!");
                 }
             } catch(IOException e) {
                 System.out.println("Sending error: " + e.getMessage());
@@ -107,9 +122,18 @@ public class ChatClient implements Runnable
             System.out.println("Server message : " + msg);
             try {
                 JSONObject jsonObject = new JSONObject(msg);
-                if(jsonObject.get("status") != null){
+
+                if(jsonObject.has("status")){
+                    // Handle every possibility
+                    if(!jsonObject.getString("status").equalsIgnoreCase("ok")){
+                        player.setUsername("");
+                    }
+                    if(jsonObject.has("player_id")){
+                        player.setId(jsonObject.getInt("player_id"));
+                    }
                     System.out.println("Status: " + jsonObject.getString("status"));
                 }
+                System.out.println("Current player: " + player);
 //                System.out.println(jsonObject.get("port"));
 //                String s = (String) jsonObject.get("port");
 //                listClientPort[0] = Integer.valueOf(s);

@@ -6,14 +6,22 @@ package chatServer;
 public class Player {
     public static final int ALIVE = 1;
     public static final int DEAD = 0;
-
-    private final int ID_NOT_SET = -99;
+    public static final int ID_NOT_SET = -99;
 
     private int addrPort;
     private String addrIp;
     private int id;
     private String username;
     private int alive;
+    private boolean isReady;
+
+    public boolean isReady() {
+        return isReady;
+    }
+
+    public void setReady(boolean ready) {
+        isReady = ready;
+    }
 
     public Player(String addrIp, int addrPort){
         this.addrPort = addrPort;
@@ -68,7 +76,8 @@ public class Player {
         return ("player_id " + id +
                 " is_alive " + alive +
                 " address " + addrIp +
-                " port " + addrPort
+                " port " + addrPort +
+                " username " + username
         );
     }
 }
