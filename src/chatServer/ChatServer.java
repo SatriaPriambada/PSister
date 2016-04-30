@@ -25,6 +25,9 @@ public class ChatServer implements Runnable {
     // a number of clients who has joined the game
     private int playerCount = 0;
 
+    private int nWerewolf = 0;
+    private int nCivilian = 0;
+
     private Player[] players = new Player[PLAYER_SIZE];
 //    private int[] listIsAlive = new int[50];
 //    private String[] listIP = new String[50];
@@ -108,8 +111,30 @@ public class ChatServer implements Runnable {
                         ready(ID);
                         break;
                     case "vote_result_civilian":
-                        int isSuccess = jsonObject.getInt("vote_status");
-                        voteResultCivilian(isSuccess);
+//                        int isSuccess = jsonObject.getInt("vote_status");
+//                        voteResultCivilian(isSuccess);
+                        int statusC = jsonObject.getInt("vote_status");
+                        if(statusC == 1){
+                            int playerKilled = jsonObject.getInt("player_killed");
+                            voteResultCivilian(playerKilled);
+                        } else if (statusC == -1){
+                            // No player killed
+                            voteResult();
+                        }
+                        break;
+                    case "vote_result_werewolf":
+                        int statusW = jsonObject.getInt("vote_status");
+                        if(statusW == 1){
+                            int playerKilled = jsonObject.getInt("player_killed");
+                            voteResultWerewolf(playerKilled);
+                        } else if (statusW == -1){
+                            // No player killed
+                            voteResult();
+                        }
+                        break;
+                    case "accepted_proposal":
+                        int kpuId = jsonObject.getInt("kpu_id");
+                        break;
                     default:
                         break;
                 }
@@ -187,7 +212,6 @@ public class ChatServer implements Runnable {
             }
             i++;
         }
-
 
         // Check if port existed
         boolean portExists = false;
@@ -354,14 +378,20 @@ public class ChatServer implements Runnable {
         }
     }
 
-    void voteResultCivilian(int success){
+    /*-------------------------- Method Vote Result Civilian ---------------------------*/
+    void voteResultCivilian(int playerKilled){
+        killPlayer(playerKilled);
+
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put("status", "ok");
-            if (success == 1)
-                jsonObject.put("description", "vote successful");
-            else
-                jsonObject.put("description", "vote failed");
+            jsonObject.put("description", "");
+
+//            jsonObject.put("status", "ok");
+//            if (success == 1)
+//                jsonObject.put("description", "vote successful");
+//            else
+//                jsonObject.put("description", "vote failed");
 
             String msg = String.valueOf(jsonObject);
             // Kirim ke KPU
@@ -371,17 +401,75 @@ public class ChatServer implements Runnable {
         }
     }
 
+
+    /*-------------------------- Method Vote Result Werewolf ---------------------------*/
+    void voteResultWerewolf(int playerKilled){
+        killPlayer(playerKilled);
+
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("status", "ok");
+            jsonObject.put("description", "");
+
+            String msg = String.valueOf(jsonObject);
+            // Kirim ke KPU
+            clients[findClient(players[0].getAddrPort())].send(msg);
+        } catch (JSONException e){
+            e.printStackTrace();
+        }
+    }
+
+    void killPlayer(int id){
+        players[id].setAlive(Player.DEAD);
+        if(players[id].getRolePlayer().equals("werewolf")){
+            nWerewolf--;
+        } else {
+            nCivilian--;
+        }
+
+        if(nWerewolf == nCivilian){
+            gameOver("werewolf");
+        } else if (nWerewolf == 0) {
+            gameOver("civilian");
+        }
+    }
+
+    void gameOver(String winner){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("method", "game_over");
+            jsonObject.put("winner", winner);
+            jsonObject.put("description", "");
+
+            String msg = String.valueOf(jsonObject);
+            // Kirim ke KPU
+            clients[findClient(players[0].getAddrPort())].send(msg);
+        } catch (JSONException e){
+            e.printStackTrace();
+        }
+    }
+
+    /*-------------------------- Method Vote Result ---------------------------*/
+    void voteResult(){
+        // Revote
+    }
+
+    /*-------------------------- Method Change Phase ---------------------------*/
+    void changePhase(){
+
+    }
+
+    /*-------------------------- Method Start Game---------------------------*/
     void startGame(){
         try {
             Random rand = new Random();
-            int nWerewolf = playerCount/3;
-            int nCivilian = playerCount - nWerewolf;
+            nWerewolf = playerCount/3;
+            nCivilian = playerCount - nWerewolf;
 
             int i = 0;
             /* Assign siapa werewolf nya */
             while (i < nWerewolf){
                 int id = rand.nextInt(playerCount);
-                System.out.println("masuk random werewolf");
                 if ((players[id].getRolePlayer() != null) && (players[id].getRolePlayer().equals("werewolf"))){
                     /* do nothing */
                 } else {
@@ -392,7 +480,6 @@ public class ChatServer implements Runnable {
             i = 0;
             /* Assign siapa civilian nya */
             while (i < playerCount){
-                System.out.println("masuk assign civilian");
                 if (players[i].getRolePlayer() != null){
                     i++;
                 } else {
@@ -401,25 +488,16 @@ public class ChatServer implements Runnable {
             }
 
             i = 0;
-            /* Kalo werewolf dapet friend */
-            /*for (int j = 0; j < playerCount; j++){
 
-                try {
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }*/
             while (i < playerCount){
                 JSONObject jsonObject = new JSONObject();
-
-                System.out.println("masuk kirim");
 
                 jsonObject.put("method", "start");
                 jsonObject.put("time", "day");
                 if (players[i].getRolePlayer().equals("werewolf")) {
                     jsonObject.put("role", "werewolf");
                     int count = 0;
-                    String[] s = new String[playerCount/3 - 1];
+                    String[] s = new String[nWerewolf - 1];
                     for (int j = 0; j < playerCount; j++){
                         if (players[j].getRolePlayer().equals("werewolf")){
                             if (i == j) {
@@ -438,7 +516,6 @@ public class ChatServer implements Runnable {
                 clients[findClient(players[i].getAddrPort())].send(msg);
                 i++;
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
