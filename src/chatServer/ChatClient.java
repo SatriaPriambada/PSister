@@ -3,11 +3,17 @@ package chatServer;
 /**
  * Created by Satria on 4/28/2016.
  */
-import java.net.*;
-import java.io.*;
-import java.util.Scanner;
 
-import org.json.*;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Scanner;
 
 public class ChatClient implements Runnable
 {
@@ -23,6 +29,9 @@ public class ChatClient implements Runnable
 
     public ChatClient(String serverName, int serverPort) {
         System.out.println("Establishing connection. Please wait ...");
+        for (int i = 0; i < ChatServer.PLAYER_SIZE; i++){
+            players[i] = new Player();
+        }
         try {
             socket = new Socket(serverName, serverPort);
             System.out.println("Connected: " + socket);
@@ -80,8 +89,6 @@ public class ChatClient implements Runnable
                         break;
                     case "leave":
                         jsonObject.put("method", "leave");
-                        jsonObject.put("udp_address", currentPlayer.getAddrPort());
-                        jsonObject.put("udp_port", currentPlayer.getAddrIp());
                         break;
                     case "ready":
                         if (currentPlayer.getId() != Player.ID_NOT_SET) {
@@ -104,6 +111,9 @@ public class ChatClient implements Runnable
                         break;
                     case "vote_civilian":
                         voteCivilian();
+                        break;
+                    case "vote_result_civilian":
+                        voteResultCivilian();
                         break;
                     default:
                         jsonObject = reqJSON("error");
@@ -134,7 +144,22 @@ public class ChatClient implements Runnable
                 if(jsonObject.has("status")){
                     // Handle every possibility
                     if(!jsonObject.getString("status").equalsIgnoreCase("ok")){
-                        currentPlayer.setUsername("");
+                        //currentPlayer.setUsername("");
+                    } else if (jsonObject.has("description")){
+                        String desc = jsonObject.getString("description");
+                        switch (desc) {
+                            case "list of clients retrieved":
+                                JSONArray jsonArray = new JSONArray(jsonObject.get("clients").toString());
+                                for (int i = 0; i < jsonArray.length(); i++) {
+                                    JSONObject json = jsonArray.getJSONObject(i);
+                                    players[i].setId(json.getInt("player_id"));
+                                    players[i].setAlive(json.getInt("is_alive"));
+                                    players[i].setAddrIp(json.getString("address"));
+                                    players[i].setAddrPort(json.getInt("port"));
+                                    players[i].setUsername(json.getString("username"));
+                                }
+                                break;
+                        }
                     }
                     if(jsonObject.has("player_id")){
                         currentPlayer.setId(jsonObject.getInt("player_id"));
@@ -233,4 +258,23 @@ public class ChatClient implements Runnable
 
     }
 
+    void voteResultCivilian(){
+        JSONObject jsonObject = new JSONObject();
+        boolean voteSuccess = true;
+        try {
+            if (voteSuccess) {
+                jsonObject.put("method", "vote_result_civilian");
+                jsonObject.put("vote_status", 1);
+                jsonObject.put("player_killed", 4);
+                jsonObject.put("vote_result", "[0,1], [1,2],...");
+            } else {
+                jsonObject.put("method", "vote_result_civilian");
+                jsonObject.put("vote_status", -1);
+                jsonObject.put("vote_result", "[0,1], [1,2],...");
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
 }
