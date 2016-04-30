@@ -92,9 +92,10 @@ public class ChatServer implements Runnable {
                     case "get_server":
                         break;
                     case "leave":
-                        clientAddr = jsonObject.getString("udp_address");
-                        clientPort = jsonObject.getInt("udp_port");
-                        leaveClient(clientAddr, clientPort);
+
+                        //clientAddr = jsonObject.getString("udp_address");
+                        //clientPort = jsonObject.getInt("udp_port");
+                        leaveClient(ID);
                         break;
                     case "client_address":
                         clientAddress();
@@ -209,16 +210,12 @@ public class ChatServer implements Runnable {
 
     /*-------------------------- Method Leave ---------------------------*/
 
-    void leaveClient(String udpAddress, int udpPort){
-        System.out.println("Address: " + udpAddress);
-        System.out.println("Port: " + udpPort);
-
-        int currentClient = findClient(udpPort);
+    void leaveClient(int ID){
         int i = 0;
         boolean found = false;
         while(i<playerCount && !found){
             if(players[i].getUsername() != null) {
-                found = players[i].getAddrPort() == udpPort;
+                found = players[i].getAddrPort() == ID;
             }
             i++;
         }
@@ -230,28 +227,30 @@ public class ChatServer implements Runnable {
                 jsonObject.put("description", "you have not join the game");
 
                 String msg = new String(String.valueOf(jsonObject));
-                clients[findClient(udpPort)].send(msg);
+                clients[findClient(ID)].send(msg);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         } else {
-            // user does not exist
             i--;
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("status", "ok");
 
                 String msg = new String(String.valueOf(jsonObject));
-                clients[findClient(udpPort)].send(msg);
+                clients[findClient(ID)].send(msg);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            while (i < playerCount) {
+            // Geser player
+            while (i+1 < playerCount) {
                 players[i].setUsername(players[i + 1].getUsername());
                 players[i].setAddrIp(players[i + 1].getAddrIp());
                 players[i].setAddrPort(players[i + 1].getAddrPort());
                 players[i].setAlive(players[i + 1].getAlive());
                 players[i].setId(players[i + 1].getId());
+
+                i++;
             }
             playerCount--;
         }
@@ -273,7 +272,6 @@ public class ChatServer implements Runnable {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
         }
 
         for (int i = 0; i < playerCount; i++){

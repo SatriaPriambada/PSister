@@ -71,8 +71,6 @@ public class ChatClient implements Runnable
                     JSONObject jsonObject = new JSONObject();
                     try {
                         jsonObject.put("method", "leave");
-                        jsonObject.put("udp_address", localIP);
-                        jsonObject.put("udp_port", localPort);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -159,4 +157,5 @@ public class ChatClient implements Runnable
         else
             client = new ChatClient(args[0], Integer.parseInt(args[1]));
     }
+
 }
