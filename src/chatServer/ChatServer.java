@@ -94,9 +94,6 @@ public class ChatServer implements Runnable {
                     case "get_server":
                         break;
                     case "leave":
-
-                        //clientAddr = jsonObject.getString("udp_address");
-                        //clientPort = jsonObject.getInt("udp_port");
                         leaveClient(ID);
                         break;
                     case "client_address":
@@ -111,9 +108,6 @@ public class ChatServer implements Runnable {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
-//            String msg = new String(String.valueOf(jsonObj));
-//            clients[findClient(ID)].send(msg);
         }
     }
 
