@@ -10,10 +10,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-<<<<<<< HEAD
 import java.util.Random;
-=======
->>>>>>> origin/master
 
 public class ChatServer implements Runnable {
     private ChatServerThread clients[] = new ChatServerThread[50];
@@ -110,22 +107,9 @@ public class ChatServer implements Runnable {
                     case "ready":
                         ready(ID);
                         break;
-<<<<<<< HEAD
                     case "vote_result_civilian":
                         int isSuccess = jsonObject.getInt("vote_status");
                         voteResultCivilian(isSuccess);
-=======
-                    case "vote_result_werewolf":
-                        int status = jsonObject.getInt("vote_status");
-                        if(status == 1){
-                            int playerKilled = jsonObject.getInt("player_killed");
-                            voteResultWerewolf(playerKilled);
-                        } else if (status == -1){
-                            // No player killed
-                            voteResult();
-                        }
-                        break;
->>>>>>> origin/master
                     default:
                         break;
                 }
@@ -370,7 +354,6 @@ public class ChatServer implements Runnable {
         }
     }
 
-<<<<<<< HEAD
     void voteResultCivilian(int success){
         JSONObject jsonObject = new JSONObject();
         try {
@@ -389,8 +372,6 @@ public class ChatServer implements Runnable {
     }
 
     void startGame(){
-        JSONObject jsonObject = new JSONObject();
-
         try {
             Random rand = new Random();
             int nWerewolf = playerCount/3;
@@ -429,6 +410,8 @@ public class ChatServer implements Runnable {
                 }
             }*/
             while (i < playerCount){
+                JSONObject jsonObject = new JSONObject();
+
                 System.out.println("masuk kirim");
 
                 jsonObject.put("method", "start");
@@ -459,16 +442,6 @@ public class ChatServer implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-=======
-    /*-------------------------- Method Vote Result Werewolf ---------------------------*/
-    void voteResultWerewolf(int playerKilled){
-
-    }
-
-    /*-------------------------- Method Vote Result ---------------------------*/
-    void voteResult(){
-        // Revote
->>>>>>> origin/master
     }
 }
 
