@@ -3,25 +3,35 @@ package chatServer;
 /**
  * Created by Satria on 4/28/2016.
  */
-import java.net.*;
-import java.io.*;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
-import org.json.*;
-
-public class ChatClient implements Runnable {
-    private Socket socket = null;
-    private Thread thread = null;
-    private DataInputStream console = null;
+public class ChatClient implements Runnable
+{
+    private Socket socket              = null;
+    private Thread thread              = null;
+    private DataInputStream  console   = null;
     private DataOutputStream streamOut = null;
-    private ChatClientThread client = null;
-    private UDPReceiver clientUDP = null;
+    private ChatClientThread client    = null;
+    private UDPReceiver clientUDP      = null;
     private UDPTransmitter transmitterUDP = null;
     private Player currentPlayer;
-    private Player[] players = new Player[ChatServer.PLAYER_SIZE];
+    private Player[] players = new Player [ChatServer.PLAYER_SIZE];
 
     public ChatClient(String serverName, int serverPort) {
         System.out.println("Establishing connection. Please wait ...");
+        for (int i = 0; i < ChatServer.PLAYER_SIZE; i++){
+            players[i] = new Player();
+        }
         try {
             socket = new Socket(serverName, serverPort);
             System.out.println("Connected: " + socket);
@@ -29,11 +39,31 @@ public class ChatClient implements Runnable {
             int localPort = socket.getLocalPort();
             currentPlayer = new Player(localIP, localPort);
             start();
-        } catch (UnknownHostException uhe) {
+        } catch(UnknownHostException uhe) {
             System.out.println("Host unknown: " + uhe.getMessage());
-        } catch (IOException e) {
-            System.out.println("Unexpected exception: " + e.getMessage());
+        } catch(IOException e) {
+            System.out.println("Unexpected exception: " + e.getMessage()); }
+    }
+
+    JSONObject reqJSON(String request){
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            switch (request){
+                case "server":
+                    jsonObject.put("method", "get_server");
+                    jsonObject.put("server", "127.0.0.1");
+                    jsonObject.put("port", "9876");
+                    break;
+                default:
+                    jsonObject.put("status", "error");
+                    jsonObject.put("description", "wrong request");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        return jsonObject;
     }
 
     public void run() {
@@ -59,8 +89,6 @@ public class ChatClient implements Runnable {
                         break;
                     case "leave":
                         jsonObject.put("method", "leave");
-                        jsonObject.put("udp_address", currentPlayer.getAddrPort());
-                        jsonObject.put("udp_port", currentPlayer.getAddrIp());
                         break;
                     case "ready":
                         if (currentPlayer.getId() != Player.ID_NOT_SET) {
@@ -73,7 +101,7 @@ public class ChatClient implements Runnable {
                         jsonObject.put("method", "client_address");
                         break;
                     case "toClient":
-                        voteWerewolf();
+                        System.out.println("ToClient");
                         break;
                     case "prepare_proposal":
                         prepareProposal();
@@ -85,15 +113,14 @@ public class ChatClient implements Runnable {
                         voteCivilian();
                         break;
                     default:
-                        jsonObject.put("status", "error");
-                        jsonObject.put("description", "wrong request");
+                        jsonObject = reqJSON("error");
                         break;
                 }
                 System.out.println(jsonObject.toString());
                 streamOut.writeUTF(jsonObject.toString());
                 streamOut.flush();
 
-            } catch (JSONException j) {
+            } catch (JSONException j){
                 j.printStackTrace();
             } catch (IOException e) {
                 System.out.println("Sending error: " + e.getMessage());
@@ -111,39 +138,42 @@ public class ChatClient implements Runnable {
             try {
                 JSONObject jsonObject = new JSONObject(msg);
 
-                if (jsonObject.has("status")) {
-                    // Handle every possibility of status not OK
-                    if (!jsonObject.getString("status").equalsIgnoreCase("ok")) {
-                        currentPlayer.setUsername("");
-                    } else { //status OK, search description
+                if(jsonObject.has("status")){
+                    // Handle every possibility
+                    if(!jsonObject.getString("status").equalsIgnoreCase("ok")){
+                        //currentPlayer.setUsername("");
+                    } else if (jsonObject.has("description")){
                         String desc = jsonObject.getString("description");
                         switch (desc) {
                             case "list of clients retrieved":
-                                JSONArray jsonArray = new JSONArray(jsonObject.get("clients"));
+                                JSONArray jsonArray = new JSONArray(jsonObject.get("clients").toString());
                                 for (int i = 0; i < jsonArray.length(); i++) {
-                                    //put into list players
+                                    JSONObject json = jsonArray.getJSONObject(i);
+                                    players[i].setId(json.getInt("player_id"));
+                                    players[i].setAlive(json.getInt("is_alive"));
+                                    players[i].setAddrIp(json.getString("address"));
+                                    players[i].setAddrPort(json.getInt("port"));
+                                    players[i].setUsername(json.getString("username"));
+
                                 }
-                                break;
-                            case "player_id":
-                                currentPlayer.setId(jsonObject.getInt("player_id"));
-                                break;
-                            default:
                                 break;
                         }
                     }
-
+                    if(jsonObject.has("player_id")){
+                        currentPlayer.setId(jsonObject.getInt("player_id"));
+                    }
                     System.out.println("Status: " + jsonObject.getString("status"));
                 }
-            }catch (JSONException jsonObjectError){
-                jsonObjectError.printStackTrace();
-            }
-            System.out.println("Current player: " + currentPlayer);
+                System.out.println("Current player: " + currentPlayer);
 
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     public void start() throws IOException {
-        console = new DataInputStream(System.in);
+        console   = new DataInputStream(System.in);
         streamOut = new DataOutputStream(socket.getOutputStream());
         if (thread == null) {
             client = new ChatClientThread(this, socket);
@@ -160,10 +190,10 @@ public class ChatClient implements Runnable {
         }
 
         try {
-            if (console != null) console.close();
-            if (streamOut != null) streamOut.close();
-            if (socket != null) socket.close();
-        } catch (IOException e) {
+            if (console   != null)  console.close();
+            if (streamOut != null)  streamOut.close();
+            if (socket    != null)  socket.close();
+        } catch(IOException e) {
             System.out.println("Error closing: " + e);
         }
         client.close();
@@ -182,12 +212,11 @@ public class ChatClient implements Runnable {
     /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
     void prepareProposal(){
         if(this.currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer do nothing");
+            System.out.println("I am proposer");
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
-
         } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leader do nothing");
+            System.out.println("I am KPU leaders");
         }
     }
 
@@ -226,4 +255,5 @@ public class ChatClient implements Runnable {
         }
 
     }
+
 }

@@ -21,7 +21,7 @@ public class UDPReceiver extends Thread
 	private int              ID        = -1;
 	private DataInputStream streamIn  =  null;
 	private DataOutputStream streamOut = null;
-    private int proposalNumber;
+
     private Player currentPlayer;
     private Player[] players = new Player [ChatServer.PLAYER_SIZE];
 
@@ -32,7 +32,6 @@ public class UDPReceiver extends Thread
 		ID     = socket.getLocalPort();
         String localIP = socket.getLocalAddress().getHostAddress();
         currentPlayer = new Player(localIP, ID);
-        proposalNumber = 0;
 		start();
 	}
 
@@ -52,13 +51,13 @@ public class UDPReceiver extends Thread
             JSONObject jsonObject = new JSONObject(sentence);
             String method = jsonObject.getString("method");
             if (method.equals("prepare_proposal")) {
-                prepareProposalResponse();
+                prepareProposal();
             } else if (method.equals("accept_proposal")) {
-                acceptProposalResponse();
+                acceptProposal();
             } else if (method.equals("vote_werewolf")) {
-                voteWerewolfResponse();
+                voteWerewolf();
             } else if (method.equals("vote_civillian")) {
-                voteCivilianResponse();
+                voteCivilian();
             }
 
 
@@ -74,19 +73,18 @@ public class UDPReceiver extends Thread
 
 
     /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
-    void prepareProposalResponse(){
+    void prepareProposal(){
         if(this.currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer do nothing");
+            System.out.println("I am proposer");
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
-
         } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leader do nothing");
+            System.out.println("I am KPU leader");
         }
     }
 
     /*-------------------------- Method Accept Proposal Paxos---------------------------*/
-    void acceptProposalResponse(){
+    void acceptProposal(){
         if(this.currentPlayer.getStatusPaxos().equals("proposer")){
             System.out.println("I am proposer");
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
@@ -98,7 +96,7 @@ public class UDPReceiver extends Thread
     }
 
     /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
-    void voteWerewolfResponse(){
+    void voteWerewolf(){
         if(this.currentPlayer.getStatusPaxos().equals("proposer")){
             System.out.println("I am proposer");
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
@@ -110,7 +108,7 @@ public class UDPReceiver extends Thread
     }
 
     /*-------------------------- Method Vote Civillian Paxos---------------------------*/
-    void voteCivilianResponse(){
+    void voteCivilian(){
         if(this.currentPlayer.getStatusPaxos().equals("proposer")){
             System.out.println("I am proposer");
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {

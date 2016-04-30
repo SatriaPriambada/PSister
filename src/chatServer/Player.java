@@ -25,6 +25,9 @@ public class Player {
         isReady = ready;
     }
 
+    public Player(){
+        /* do nothing */
+    }
     public Player(String addrIp, int addrPort){
         this.addrPort = addrPort;
         this.addrIp = addrIp;
