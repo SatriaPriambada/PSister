@@ -33,15 +33,14 @@ public class UDPReceiver extends Thread
 		try {
 			DatagramSocket ListenSocket = new DatagramSocket(listenPort);
 			byte[] receiveData = new byte[1024];
-			while(true)
-			{
-				System.out.println("waiting ...");
-				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-				ListenSocket.receive(receivePacket);
+			System.out.println("waiting ...");
+			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+			ListenSocket.receive(receivePacket);
 
-				String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-				System.out.println("RECEIVED from client: " + sentence);
-			}
+			String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
+			System.out.println("RECEIVED from client: " + sentence);
+
+
 		} catch (SocketException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
