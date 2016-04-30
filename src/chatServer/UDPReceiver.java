@@ -22,6 +22,8 @@ public class UDPReceiver extends Thread
 	private DataInputStream streamIn  =  null;
 	private DataOutputStream streamOut = null;
     private int proposalNumber;
+    private int currentLeader;
+    private int previousLeader;
     private Player currentPlayer;
     private Player[] players = new Player [ChatServer.PLAYER_SIZE];
 
@@ -33,6 +35,8 @@ public class UDPReceiver extends Thread
         String localIP = socket.getLocalAddress().getHostAddress();
         currentPlayer = new Player(localIP, ID);
         proposalNumber = 0;
+        currentLeader = Player.ID_NOT_SET;
+        previousLeader = Player.ID_NOT_SET;
 		start();
 	}
 
@@ -45,9 +49,11 @@ public class UDPReceiver extends Thread
 			System.out.println("waiting ...");
 			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 			ListenSocket.receive(receivePacket);
+            InetAddress IPSender = receivePacket.getAddress();
+            int portSender = receivePacket.getPort();
 
 			String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-			System.out.println("RECEIVED from client: " + sentence);
+			System.out.println("RECEIVED from client: " + IPSender + ":" + portSender + "receive" + sentence);
 
             JSONObject jsonObject = new JSONObject(sentence);
             String method = jsonObject.getString("method");

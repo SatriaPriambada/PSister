@@ -72,7 +72,7 @@ public class ChatClient implements Runnable {
                     case "client_address":
                         jsonObject.put("method", "client_address");
                         break;
-                    case "toClient":
+                    case "voteWerewolf":
                         voteWerewolf();
                         break;
                     case "prepare_proposal":
@@ -181,8 +181,11 @@ public class ChatClient implements Runnable {
 
     /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
     void prepareProposal(){
+        transmitterUDP = new UDPTransmitter(this, this.currentPlayer.getAddrIp(), this.currentPlayer.getAddrPort());
+        JSONObject jsonObject = new JSONObject();
         if(this.currentPlayer.getStatusPaxos().equals("proposer")){
             System.out.println("I am proposer do nothing");
+            transmitterUDP = new UDPTransmitter(this, this.currentPlayer.getAddrIp(), this.currentPlayer.getAddrPort());
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
 
