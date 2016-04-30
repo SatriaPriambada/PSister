@@ -76,6 +76,11 @@ public class ChatClient implements Runnable
                         jsonObject.put("method", "get_server");
                         jsonObject.put("server", "127.0.0.1");
                         jsonObject.put("port", "9876");
+
+                        // Send
+                        System.out.println(jsonObject.toString());
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
                         break;
                     case "join":
                         Scanner scanner = new Scanner(System.in);
@@ -86,9 +91,19 @@ public class ChatClient implements Runnable
                         jsonObject.put("udp_address", currentPlayer.getAddrIp());
                         jsonObject.put("udp_port", currentPlayer.getAddrPort());
                         currentPlayer.setUsername(username);
+
+                        // Send
+                        System.out.println(jsonObject.toString());
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
                         break;
                     case "leave":
                         jsonObject.put("method", "leave");
+
+                        // Send
+                        System.out.println(jsonObject.toString());
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
                         break;
                     case "ready":
                         if (currentPlayer.getId() != Player.ID_NOT_SET) {
@@ -96,9 +111,19 @@ public class ChatClient implements Runnable
                         } else {
                             System.out.println("You have not joined the game");
                         }
+
+                        // Send
+                        System.out.println(jsonObject.toString());
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
                         break;
                     case "client_address":
                         jsonObject.put("method", "client_address");
+
+                        // Send
+                        System.out.println(jsonObject.toString());
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
                         break;
                     case "toClient":
                         System.out.println("ToClient");
@@ -112,14 +137,30 @@ public class ChatClient implements Runnable
                     case "vote_civilian":
                         voteCivilian();
                         break;
+                    case "vote_result_werewolf":
+                        jsonObject.put("method", "vote_result_werewolf");
+                        jsonObject.put("vote_status", 1);
+                        jsonObject.put("player_killed", 4);
+                        int[][] x = {{0,1}, {1,2}};
+                        jsonObject.put("vote_result", x);
+
+                        // Send
+                        System.out.println(jsonObject.toString());
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
+                        break;
+                    case "vote_result":
+                        jsonObject.put("method", "vote_result");
+
+                        // Send
+                        System.out.println(jsonObject.toString());
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
+                        break;
                     default:
                         jsonObject = reqJSON("error");
                         break;
                 }
-                System.out.println(jsonObject.toString());
-                streamOut.writeUTF(jsonObject.toString());
-                streamOut.flush();
-
             } catch (JSONException j){
                 j.printStackTrace();
             } catch (IOException e) {

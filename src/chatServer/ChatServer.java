@@ -106,6 +106,16 @@ public class ChatServer implements Runnable {
                     case "ready":
                         ready(ID);
                         break;
+                    case "vote_result_werewolf":
+                        int status = jsonObject.getInt("vote_status");
+                        if(status == 1){
+                            int playerKilled = jsonObject.getInt("player_killed");
+                            voteResultWerewolf(playerKilled);
+                        } else if (status == -1){
+                            // No player killed
+                            voteResult();
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -342,6 +352,16 @@ public class ChatServer implements Runnable {
                 }
             }
         }
+    }
+
+    /*-------------------------- Method Vote Result Werewolf ---------------------------*/
+    void voteResultWerewolf(int playerKilled){
+
+    }
+
+    /*-------------------------- Method Vote Result ---------------------------*/
+    void voteResult(){
+        // Revote
     }
 }
 
