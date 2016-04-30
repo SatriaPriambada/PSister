@@ -12,7 +12,7 @@ public class ChatServer implements Runnable {
     private ServerSocket server = null;
     private Thread       thread = null;
 
-    private final int PLAYER_SIZE = 50;
+    public static final int PLAYER_SIZE = 50;
 
     // a number of clients who connects to server
     private int clientCount = 0;
@@ -87,7 +87,9 @@ public class ChatServer implements Runnable {
                         String clientUname = jsonObject.getString("username");
                         String clientAddr = jsonObject.getString("udp_address");
                         int clientPort = jsonObject.getInt("udp_port");
+
                         joinClient(clientUname, clientAddr, clientPort);
+
                         break;
                     case "get_server":
                         break;
@@ -99,6 +101,9 @@ public class ChatServer implements Runnable {
                         break;
                     case "client_address":
                         clientAddress();
+                        break;
+                    case "ready":
+                        ready(ID);
                         break;
                     default:
                         break;
@@ -152,6 +157,7 @@ public class ChatServer implements Runnable {
     else
         System.out.println("Client refused: maximum " + clients.length + " reached.");
     }
+
     public static void main(String args[])
     {
         ChatServer server = null;
@@ -170,7 +176,6 @@ public class ChatServer implements Runnable {
         System.out.println("Address: " + udpAddress);
         System.out.println("Port: " + udpPort);
 
-        int currentClient = findClient(udpPort);
         int i = 0;
         boolean userExists = false;
         while(i<playerCount && !userExists){
@@ -180,8 +185,17 @@ public class ChatServer implements Runnable {
             i++;
         }
 
+
+        // Check if port existed
+        boolean portExists = false;
+        i = 0;
+        while(i<playerCount && !portExists){
+            portExists = (players[i].getAddrPort() == udpPort);
+            i++;
+        }
+
+        JSONObject jsonObject = new JSONObject();
         if(userExists){
-            JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("status", "fail");
                 jsonObject.put("description", "user exists");
@@ -191,10 +205,16 @@ public class ChatServer implements Runnable {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
+        } else if (portExists){
+            try {
+                jsonObject.put("status", "fail");
+                jsonObject.put("description", "player has already joined");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         } else {
-            // user does not exist
+            // user and port do not exist
             players[playerCount].setUsername(username);
-            JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("status", "ok");
                 jsonObject.put("player_id", playerCount);
@@ -288,5 +308,41 @@ public class ChatServer implements Runnable {
         }
     }
 
+    /*-------------------------- Method Ready ---------------------------*/
+    void ready(int ID){
+        int i = 0;
+        boolean found = false;
+        while(i<playerCount && !found){
+            if(players[i].getUsername() != null) {
+                found = players[i].getAddrPort() == ID;
+            }
+            i++;
+        }
 
+        if(found){
+            i--;
+            JSONObject jsonObject = new JSONObject();
+            if(players[i].isReady()){
+                try {
+                    jsonObject.put("status", "fail");
+                    jsonObject.put("description", "You were ready");
+                    String msg = new String(String.valueOf(jsonObject));
+                    clients[findClient(players[i].getAddrPort())].send(msg);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                try {
+                    jsonObject.put("status", "ok");
+                    jsonObject.put("description", "waiting for other player to start");
+                    players[i].setReady(true);
+                    String msg = new String(String.valueOf(jsonObject));
+                    clients[findClient(players[i].getAddrPort())].send(msg);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }
+
