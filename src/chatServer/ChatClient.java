@@ -31,6 +31,22 @@ public class ChatClient implements Runnable
     private int previousLeader = Player.ID_NOT_SET;
     private int numberPlayer;
 
+    public Player getCurrentPlayer(){
+        return currentPlayer;
+    }
+
+    public Player[] getPlayers(){
+        return players;
+    }
+
+    public int getNumberPlayer(){
+        return numberPlayer;
+    }
+
+    public int getProposalID(){
+        return proposalID;
+    }
+
     public ChatClient(String serverName, int serverPort) {
         System.out.println("Establishing connection. Please wait ...");
         for (int i = 0; i < ChatServer.PLAYER_SIZE; i++){
@@ -99,17 +115,14 @@ public class ChatClient implements Runnable
                         streamOut.writeUTF(jsonObject.toString());
                         streamOut.flush();
                         break;
-                    case "voteWerewolf":
-                        System.out.println("here");
-                        break;
-                    case "prepareProposal":
-                        System.out.println("here");
+                    case "vote_werewolf":
+                        voteWerewolf();
                         break;
                     case "accept_proposal":
-                        System.out.println("here");
+                        acceptProposal();
                         break;
                     case "vote_civilian":
-                        System.out.println("here");
+                        voteCivilian();
                         break;
                     default:
                         jsonObject.put("status","error");
@@ -154,6 +167,13 @@ public class ChatClient implements Runnable
                                     System.out.println(players[i].toString());
                                 }
                                 numberPlayer = jsonArray.length();
+                                //Set player ID N and N-1 as proposer and other as acceptor
+                                if (currentPlayer.getId() >= numberPlayer - 2){
+                                    currentPlayer.setStatusPaxos("proposer");
+                                } else {
+                                    currentPlayer.setStatusPaxos("acceptor");
+                                }
+                                prepareProposal();
                                 break;
                         }
                     }
@@ -165,6 +185,8 @@ public class ChatClient implements Runnable
                 System.out.println("Current player: " + currentPlayer);
 
             } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -200,57 +222,57 @@ public class ChatClient implements Runnable
 
 
     /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
-    public void prepareProposal() {
-        /*JSONObject jsonObject = new JSONObject();
-        jsonObject.put("method","prepare_proposal");
-        jsonObject.put("proposal_id", "["+ proposalID + ","+ currentPlayer.getId() + "]");
-        for (int i = 0; i < numberPlayer; i++ ){
-            System.out.println("loop :" + i);
-            transmitterUDP = new UDPTransmitter(this, players[i].getAddrIp(), players[i].getAddrPort());
-            transmitterUDP.send(jsonObject.toString());
+    public void prepareProposal() throws JSONException, InterruptedException {
+        System.out.println(currentPlayer.getStatusPaxos().toString());
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("method","prepare_proposal");
+            jsonObject.put("proposal_id", "["+ proposalID + ","+ currentPlayer.getId() + "]");
+            for (int i = 0; i < numberPlayer; i++ ){
+                System.out.println("loop :" + players[i].getAddrIp() + " : "+ players[i].getAddrPort());
+                transmitterUDP = new UDPTransmitter(this, players[i].getAddrIp(), players[i].getAddrPort(), socket.getLocalPort());
+                transmitterUDP.send(jsonObject.toString());
+            }
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leaders");
         }
+    }
+
+    /*-------------------------- Method Accept Proposal Paxos---------------------------*/
+    public void acceptProposal(){
         if(this.currentPlayer.getStatusPaxos().equals("proposer")){
             System.out.println("I am proposer");
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
         } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leaders");
-        }*/
-    }
-
-    /*-------------------------- Method Accept Proposal Paxos---------------------------*/
-    public void acceptProposal(){
-        /*if(this.currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer");
-        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
-            System.out.println("I am acceptor");
-        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
             System.out.println("I am KPU leader");
-        }*/
+        }
 
     }
 
     /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
     public void voteWerewolf(){
-        /*if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
             System.out.println("I am proposer");
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
         } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
             System.out.println("I am KPU leader");
         }
-*/
     }
 
     /*-------------------------- Method Vote Civillian Paxos---------------------------*/
     public void voteCivilian(){
-        /*if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
             System.out.println("I am proposer");
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
         } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
             System.out.println("I am KPU leader");
-        }*/
+        }
 
     }
 
