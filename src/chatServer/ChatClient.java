@@ -5,6 +5,8 @@ package chatServer;
  */
 import java.net.*;
 import java.io.*;
+import java.util.Scanner;
+
 import org.json.*;
 
 public class ChatClient implements Runnable
@@ -34,85 +36,86 @@ public class ChatClient implements Runnable
             System.out.println("Unexpected exception: " + e.getMessage()); }
     }
 
+    JSONObject reqJSON(String request){
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            switch (request){
+                case "server":
+                    jsonObject.put("method", "get_server");
+                    jsonObject.put("server", "127.0.0.1");
+                    jsonObject.put("port", "9876");
+                    break;
+                default:
+                    jsonObject.put("status", "error");
+                    jsonObject.put("description", "wrong request");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return jsonObject;
+    }
+
     public void run() {
         while (thread != null) {
             try {
                 String read = console.readLine();
                 JSONObject jsonObject = new JSONObject();
-                if (read.equals("server")) {
-                    try {
+                switch (read) {
+                    case "server":
                         jsonObject.put("method", "get_server");
                         jsonObject.put("server", "127.0.0.1");
                         jsonObject.put("port", "9876");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    streamOut.writeUTF(jsonObject.toString());
-                    streamOut.flush();
-                } else if (read.contains("join")) {
-                    if(read.length() > 5) {
-                        String username = read.substring(5);
-                        try {
-                            jsonObject.put("method", "join");
-                            jsonObject.put("username", username);
-                            jsonObject.put("udp_address", currentPlayer.getAddrIp());
-                            jsonObject.put("udp_port", currentPlayer.getAddrPort());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        break;
+                    case "join":
+                        Scanner scanner = new Scanner(System.in);
+                        System.out.print("Username: ");
+                        String username = scanner.next();
+                        jsonObject.put("method", "join");
+                        jsonObject.put("username", username);
+                        jsonObject.put("udp_address", currentPlayer.getAddrIp());
+                        jsonObject.put("udp_port", currentPlayer.getAddrPort());
                         currentPlayer.setUsername(username);
-                        System.out.println(jsonObject);
-                        streamOut.writeUTF(jsonObject.toString());
-                        streamOut.flush();
-                    } else {
-                        System.out.println("Please input username");
-                    }
-                } else if (read.equals("leave")) {
-                    try {
+                        break;
+                    case "leave":
                         jsonObject.put("method", "leave");
                         jsonObject.put("udp_address", currentPlayer.getAddrPort());
                         jsonObject.put("udp_port", currentPlayer.getAddrIp());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    System.out.println(jsonObject);
-                    streamOut.writeUTF(jsonObject.toString());
-                    streamOut.flush();
-                } else if (read.contains("client_address")) {
-
-                } else if (read.equals("ready")){
-                    // Check if player has joined the game by checking player_id
-                    if (currentPlayer.getId() != Player.ID_NOT_SET){
-                        try {
+                        break;
+                    case "ready":
+                        if (currentPlayer.getId() != Player.ID_NOT_SET) {
                             jsonObject.put("method", "ready");
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                        } else {
+                            System.out.println("You have not joined the game");
                         }
-                        streamOut.writeUTF(jsonObject.toString());
-                        streamOut.flush();
-                    } else {
-                        System.out.println("You have not joined the game");
-                    }
-                } else if (read.equals("client_address")) {
-                    try {
+                        break;
+                    case "client_address":
                         jsonObject.put("method", "client_address");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    System.out.println(jsonObject);
-                    streamOut.writeUTF(jsonObject.toString());
-                    streamOut.flush();
-                } else if (read.equals("toClient")){
-                    System.out.println("ToClient");
-                    transmitterUDP = new UDPTransmitter(this, players[0].getAddrIp(), players[0].getAddrPort());
-                    try {
-                        jsonObject.put("method", "prepare_proposal");
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                    transmitterUDP.send("HI");
+                        break;
+                    case "toClient":
+                        System.out.println("ToClient");
+                        break;
+                    case "prepare_proposal":
+                        prepareProposal();
+                        break;
+                    case "accept_proposal":
+                        acceptProposal();
+                        break;
+                    case "vote_civilian":
+                        voteCivilian();
+                        break;
+                    default:
+                        jsonObject = reqJSON("error");
+                        break;
                 }
-            } catch(IOException e) {
+                System.out.println(jsonObject.toString());
+                streamOut.writeUTF(jsonObject.toString());
+                streamOut.flush();
+
+            } catch (JSONException j){
+                j.printStackTrace();
+            } catch (IOException e) {
                 System.out.println("Sending error: " + e.getMessage());
                 stop();
             }
@@ -182,5 +185,52 @@ public class ChatClient implements Runnable
             client = new ChatClient(args[0], Integer.parseInt(args[1]));
     }
 
+
+    /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
+    void prepareProposal(){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        }
+    }
+
+    /*-------------------------- Method Accept Proposal Paxos---------------------------*/
+    void acceptProposal(){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        }
+
+    }
+
+    /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
+    void voteWerewolf(){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        }
+
+    }
+
+    /*-------------------------- Method Vote Civillian Paxos---------------------------*/
+    void voteCivilian(){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        }
+
+    }
 
 }
