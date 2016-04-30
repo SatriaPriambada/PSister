@@ -14,6 +14,8 @@ public class Player {
     private int id;
     private String username;
     private int alive;
+    private String StatusPaxos;
+    private String RolePlayer;
 
     public Player(String addrIp, int addrPort){
         this.addrPort = addrPort;
@@ -30,7 +32,6 @@ public class Player {
     public void setAlive(int alive) {
         this.alive = alive;
     }
-
 
     public int getAddrPort() {
         return addrPort;
@@ -56,12 +57,28 @@ public class Player {
         this.id = id;
     }
 
+    public String getRolePlayer() {
+        return RolePlayer;
+    }
+
+    public void setRolePlayer(String RolePlayer) {
+        this.RolePlayer = RolePlayer;
+    }
+
     public String getUsername() {
         return username;
     }
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getStatusPaxos() {
+        return StatusPaxos;
+    }
+
+    public void setStatusPaxos(String StatusPaxos) {
+        this.StatusPaxos = StatusPaxos;
     }
 
     public String toString(){

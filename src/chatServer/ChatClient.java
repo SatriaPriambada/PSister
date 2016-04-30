@@ -20,6 +20,7 @@ public class ChatClient implements Runnable
     private String localIP;
     private int[] listClientPort = new int[50];
     private String[] listClientIP = new String[50];
+    private Player currentPlayer = null;
 
     public ChatClient(String serverName, int serverPort) {
         System.out.println("Establishing connection. Please wait ...");
@@ -91,6 +92,14 @@ public class ChatClient implements Runnable
                     System.out.println("IP target :" + listClientIP[0] + " port : " + listClientPort[0]);
                     transmitterUDP = new UDPTransmitter(this, listClientIP[0], listClientPort[0]);
                     transmitterUDP.send("Hello World!");
+                } else if (read.equals("prepare_proposal")) {
+                    prepareProposal();
+                } else if (read.equals("accept_proposal")) {
+                    acceptProposal();
+                } else if (read.equals("vote_werewolf")) {
+                    voteWerewolf();
+                } else if (read.equals("vote_civillian")) {
+                    voteCivilian();
                 }
             } catch(IOException e) {
                 System.out.println("Sending error: " + e.getMessage());
@@ -156,6 +165,54 @@ public class ChatClient implements Runnable
             System.out.println("Usage: java ChatClient host port");
         else
             client = new ChatClient(args[0], Integer.parseInt(args[1]));
+    }
+
+
+    /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
+    void prepareProposal(){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        }
+    }
+
+    /*-------------------------- Method Accept Proposal Paxos---------------------------*/
+    void acceptProposal(){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        }
+
+    }
+
+    /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
+    void voteWerewolf(){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        }
+
+    }
+
+    /*-------------------------- Method Vote Civillian Paxos---------------------------*/
+    void voteCivilian(){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+            System.out.println("I am proposer");
+        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+            System.out.println("I am acceptor");
+        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        }
+
     }
 
 }
