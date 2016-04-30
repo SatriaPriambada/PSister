@@ -45,8 +45,9 @@ public class UDPReceiver extends Thread
 			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 			ListenSocket.receive(receivePacket);
 
+
 			String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-			System.out.println("RECEIVED from client: " + sentence);
+			System.out.println("RECEIVED from client: " + receivePacket.getAddress() + ":" + receivePacket.getPort() + sentence);
 
             JSONObject jsonObject = new JSONObject(sentence);
             String method = jsonObject.getString("method");

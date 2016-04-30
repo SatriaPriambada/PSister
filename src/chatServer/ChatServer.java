@@ -91,7 +91,6 @@ public class ChatServer implements Runnable {
                         String clientUname = jsonObject.getString("username");
                         String clientAddr = jsonObject.getString("udp_address");
                         int clientPort = jsonObject.getInt("udp_port");
-
                         joinClient(clientUname, clientAddr, clientPort);
 
                         break;
