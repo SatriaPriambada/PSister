@@ -193,7 +193,7 @@ public class ChatClient implements Runnable
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
         } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leader");
+            System.out.println("I am KPU leaders");
         }
     }
 
