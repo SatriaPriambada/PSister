@@ -52,4 +52,28 @@ public class UDPTransmitter extends Thread{
         }
 
     }
+
+
+    public void reply(String message) throws InterruptedException {
+
+        try {
+
+            IPAddress = InetAddress.getByName(IPTarget);
+            DatagramSocket datagramSocket = new DatagramSocket();
+            UnreliableSender unreliableSender = new UnreliableSender(datagramSocket);
+            String sentence = message;
+            byte[] sendData = sentence.getBytes();
+            System.out.println("Reply :" + message + datagramSocket.getLocalSocketAddress());
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, portTarget);
+            datagramSocket.send(sendPacket);
+            datagramSocket.close();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (SocketException e) {
+            Thread.sleep(10);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 }

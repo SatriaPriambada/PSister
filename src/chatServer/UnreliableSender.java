@@ -27,5 +27,6 @@ public class UnreliableSender {
         if (rand < 0.85) {
             datagramSocket.send(packet);
         }
+        datagramSocket.close();
     }
 }

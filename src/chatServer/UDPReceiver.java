@@ -1,5 +1,6 @@
 package chatServer;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,9 +22,26 @@ public class UDPReceiver extends Thread
 	private int              ID        = -1;
 	private DataInputStream streamIn  =  null;
 	private DataOutputStream streamOut = null;
+    private int counter = 0;
 
     private Player currentPlayer;
     private Player[] players = new Player [ChatServer.PLAYER_SIZE];
+    private String IPReturn;
+    private int portReturn;
+    private UDPTransmitter udpTransmitter;
+    private boolean accept = false;
+    private boolean acceptLeader = false;
+    private boolean finishElection = false;
+    private int currentLeader = Player.ID_NOT_SET;
+    private int previousLeader = Player.ID_NOT_SET;
+
+    public int getCurrentLeader(){
+        return currentLeader;
+    }
+
+    public int getPreviousLeader(){
+        return previousLeader;
+    }
 
 	public UDPReceiver(ChatClient _client, Socket _socket) {
 		super();
@@ -41,30 +59,73 @@ public class UDPReceiver extends Thread
 		try {
 			DatagramSocket ListenSocket = new DatagramSocket(listenPort);
 			byte[] receiveData = new byte[1024];
-			System.out.println("waiting ...");
-			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            ListenSocket.receive(receivePacket);
-            currentPlayer = client.getCurrentPlayer();
-            players = client.getPlayers();
+            while(true) {
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                ListenSocket.receive(receivePacket);
+                currentPlayer = client.getCurrentPlayer();
+                players = client.getPlayers();
 
-			String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-			System.out.println("RECEIVED from client: " + sentence);
-            String IPTarget = receivePacket.getAddress().toString().substring(1);
-            System.out.println("Send" + IPTarget + ":" + receivePacket.getPort());
-            UDPTransmitter udpTransmitter = new UDPTransmitter(client, IPTarget, receivePacket.getPort() - 1000, ID);
-            udpTransmitter.send("REPLY HELLO");
-            JSONObject jsonObject = new JSONObject(sentence);
-            String method = jsonObject.getString("method");
-            if (method.equals("prepare_proposal")) {
-                prepareProposalResponse();
-            } else if (method.equals("accept_proposal")) {
-                acceptProposalResponse();
-            } else if (method.equals("vote_werewolf")) {
-                voteWerewolfResponse();
-            } else if (method.equals("vote_civillian")) {
-                voteCivilianResponse();
+                String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                System.out.println("RECEIVED from client: " + receivePacket.getSocketAddress() + sentence);
+                IPReturn = receivePacket.getAddress().toString().substring(1);
+                portReturn = receivePacket.getPort() - 1000;
+                //System.out.println("IF FOUND RETURN TO " + IPReturn + ":" + portReturn);
+                JSONObject jsonObject = new JSONObject(sentence);
+                if (jsonObject.has("method")) {
+                    //handle method this is 1st time request
+                    String method = jsonObject.getString("method");
+                    if (method.equals("prepare_proposal")) {
+                        prepareProposalResponse();
+                    } else if (method.equals("vote_werewolf")) {
+                        voteWerewolfResponse();
+                    } else if (method.equals("vote_civillian")) {
+                        voteCivilianResponse();
+                    } else {
+                        System.out.println(method);
+                    }
+                } else if (jsonObject.has("status")){
+                    //handle object with status this is response from other client
+                    if(jsonObject.getString("status").equalsIgnoreCase("ok")){
+                        if(jsonObject.has("description")){
+                            if(jsonObject.getString("description").equalsIgnoreCase("accepted")){
+                                //count how many accepted if majority proceed with accept proposal
+                                counter++;
+                                if (counter > client.getNumberPlayer() / 2){
+                                    int leaderCandidate = currentPlayer.getId();
+                                    //when there is no accepted leader start the accept protocol
+                                    if(!acceptLeader) {
+                                        System.out.println("candidate : " + leaderCandidate);
+                                        accept = false;
+                                        client.acceptProposal(leaderCandidate);
+                                        acceptLeader = true;
+                                    } else {
+                                        System.out.println("LEADER IS SELECTED : " + leaderCandidate);
+                                        finishElection = true;
+                                        //first selection
+                                        if (currentLeader == Player.ID_NOT_SET) {
+                                            currentLeader = leaderCandidate;
+                                        } else {
+                                            previousLeader = currentLeader;
+                                            currentLeader = leaderCandidate;
+                                        }
+                                    }
+                                }
+                            } else {
+                                System.out.println(jsonObject);
+                            }
+                        } else {
+                            System.out.println(jsonObject);
+                        }
+                    } else {
+                        System.out.println(jsonObject);
+                    }
+
+                }
+
+                if(finishElection) {
+                    client.VoteNow();
+                }
             }
-
 
 		} catch (SocketException e) {
 			e.printStackTrace();
@@ -81,36 +142,57 @@ public class UDPReceiver extends Thread
 
     /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
     void prepareProposalResponse() throws JSONException, InterruptedException {
-        if(currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer");
-            System.out.println("I am proposer");
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("method","prepare_proposal");
-            int numberPlayer = client.getNumberPlayer();
-            int proposalID = client.getProposalID();
-            jsonObject.put("proposal_id", "["+ proposalID + ","+ currentPlayer.getId() + "]");
-            for (int i = 0; i < numberPlayer; i++ ){
-                System.out.println("loop :" + players[i].getAddrIp() + " : "+ players[i].getAddrPort());
-                UDPTransmitter transmitterUDP = new UDPTransmitter(client, players[i].getAddrIp(), players[i].getAddrPort(), socket.getLocalPort());
-                transmitterUDP.send(jsonObject.toString());
+        JSONObject jsonObject = new JSONObject();
+
+        //each node can only reply once
+        if(!accept) {
+            jsonObject.put("status", "ok");
+            jsonObject.put("description", "accepted");
+            if (currentPlayer.getStatusPaxos().equals("proposer")) {
+                udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
+                udpTransmitter.reply(jsonObject.toString());
+            } else if (currentPlayer.getStatusPaxos().equals("acceptor")) {
+                System.out.println("I am acceptor");
+                udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
+                udpTransmitter.reply(jsonObject.toString());
             }
-        } else if (currentPlayer.getStatusPaxos().equals("acceptor")) {
-            System.out.println("I am acceptor");
-        } else if (currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leader");
+            accept = true;
+        }  else {
+            System.out.println("Already accepted other proposal");
+            jsonObject.put("status", "failed");
+            jsonObject.put("description","rejected");
+
+            udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
+            udpTransmitter.reply(jsonObject.toString());
         }
     }
 
     /*-------------------------- Method Accept Proposal Paxos---------------------------*/
-    void acceptProposalResponse(){
-        if(currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer");
-        } else if (currentPlayer.getStatusPaxos().equals("acceptor")) {
-            System.out.println("I am acceptor");
-        } else if (currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leader");
-        }
+    void acceptProposalResponse(int candidateLeader) throws JSONException, InterruptedException {
+        JSONObject jsonObject = new JSONObject();
+        if(!accept) {
+            jsonObject.put("status", "ok");
+            jsonObject.put("description", "accepted");
+            if (currentPlayer.getStatusPaxos().equals("proposer")) {
+                System.out.println("I am accept proposer");
 
+                udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
+                udpTransmitter.reply(jsonObject.toString());
+
+            } else if (currentPlayer.getStatusPaxos().equals("acceptor")) {
+                System.out.println("I am accept acceptor");
+
+                udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
+                udpTransmitter.reply(jsonObject.toString());
+            }
+        }else {
+            System.out.println("Already accepted other accept proposal");
+            jsonObject.put("status", "failed");
+            jsonObject.put("description","rejected");
+
+            udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
+            udpTransmitter.reply(jsonObject.toString());
+        }
     }
 
     /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
@@ -122,7 +204,6 @@ public class UDPReceiver extends Thread
         } else if (currentPlayer.getStatusPaxos().equals("leader")) {
             System.out.println("I am KPU leader");
         }
-
     }
 
     /*-------------------------- Method Vote Civillian Paxos---------------------------*/
@@ -134,6 +215,5 @@ public class UDPReceiver extends Thread
         } else if (currentPlayer.getStatusPaxos().equals("leader")) {
             System.out.println("I am KPU leader");
         }
-
     }
 }

@@ -30,6 +30,7 @@ public class ChatClient implements Runnable
     private int currentLeader = Player.ID_NOT_SET;
     private int previousLeader = Player.ID_NOT_SET;
     private int numberPlayer;
+    private String Time = "night";
 
     public Player getCurrentPlayer(){
         return currentPlayer;
@@ -118,9 +119,6 @@ public class ChatClient implements Runnable
                     case "vote_werewolf":
                         voteWerewolf();
                         break;
-                    case "accept_proposal":
-                        acceptProposal();
-                        break;
                     case "vote_civilian":
                         voteCivilian();
                         break;
@@ -170,17 +168,18 @@ public class ChatClient implements Runnable
                                 //Set player ID N and N-1 as proposer and other as acceptor
                                 if (currentPlayer.getId() >= numberPlayer - 2){
                                     currentPlayer.setStatusPaxos("proposer");
+                                    prepareProposal();
                                 } else {
                                     currentPlayer.setStatusPaxos("acceptor");
                                 }
-                                prepareProposal();
+
                                 break;
                         }
                     }
                     if(jsonObject.has("player_id")){
                         currentPlayer.setId(jsonObject.getInt("player_id"));
                     }
-                    System.out.println("Status: " + jsonObject.getString("status"));
+//                    System.out.println("Status: " + jsonObject.getString("status"));
                 }
                 System.out.println("Current player: " + currentPlayer);
 
@@ -223,12 +222,15 @@ public class ChatClient implements Runnable
 
     /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
     public void prepareProposal() throws JSONException, InterruptedException {
-        System.out.println(currentPlayer.getStatusPaxos().toString());
+
         if(this.currentPlayer.getStatusPaxos().equals("proposer")){
             System.out.println("I am proposer");
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("method","prepare_proposal");
             jsonObject.put("proposal_id", "["+ proposalID + ","+ currentPlayer.getId() + "]");
+            if (previousLeader != Player.ID_NOT_SET){
+                jsonObject.put("previous_accepted", previousLeader);
+            }
             for (int i = 0; i < numberPlayer; i++ ){
                 System.out.println("loop :" + players[i].getAddrIp() + " : "+ players[i].getAddrPort());
                 transmitterUDP = new UDPTransmitter(this, players[i].getAddrIp(), players[i].getAddrPort(), socket.getLocalPort());
@@ -242,15 +244,23 @@ public class ChatClient implements Runnable
     }
 
     /*-------------------------- Method Accept Proposal Paxos---------------------------*/
-    public void acceptProposal(){
-        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer");
+    public void acceptProposal(int candidateLeader) throws InterruptedException, JSONException {
+        if (currentPlayer.getStatusPaxos().equals("proposer")) {
+            System.out.println("I am accept proposer");
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("method", "accept_proposal");
+            int numberPlayer = getNumberPlayer();
+            int proposalID = getProposalID();
+            jsonObject.put("proposal_id", "[" + proposalID + "," + currentPlayer.getId() + "]");
+            jsonObject.put("kpu_id", candidateLeader);
+            for (int i = 0; i < numberPlayer; i++) {
+                System.out.println("loop :" + players[i].getAddrIp() + " : " + players[i].getAddrPort());
+                UDPTransmitter transmitterUDP = new UDPTransmitter(this, players[i].getAddrIp(), players[i].getAddrPort(), socket.getLocalPort());
+                transmitterUDP.send(jsonObject.toString());
+            }
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
-        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leader");
         }
-
     }
 
     /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
@@ -276,6 +286,13 @@ public class ChatClient implements Runnable
 
     }
 
+    public void VoteNow(){
+        if(Time.equals("day")){
+            voteCivilian();
+        } else if (Time.equals("night")){
+            voteWerewolf();
+        }
+    }
 
     public static void main(String args[]) {
         ChatClient client = null;
