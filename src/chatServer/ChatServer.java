@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Random;
 
 public class ChatServer implements Runnable {
     private ChatServerThread clients[] = new ChatServerThread[50];
@@ -20,9 +21,12 @@ public class ChatServer implements Runnable {
 
     // a number of clients who connects to server
     private int clientCount = 0;
-
+    private int readyCount = 0;
     // a number of clients who has joined the game
     private int playerCount = 0;
+
+    private int nWerewolf = 0;
+    private int nCivilian = 0;
 
     private Player[] players = new Player[PLAYER_SIZE];
 //    private int[] listIsAlive = new int[50];
@@ -105,9 +109,35 @@ public class ChatServer implements Runnable {
                     case "ready":
                         ready(ID);
                         break;
+                    case "vote_result_civilian":
+//                        int isSuccess = jsonObject.getInt("vote_status");
+//                        voteResultCivilian(isSuccess);
+                        int statusC = jsonObject.getInt("vote_status");
+                        if(statusC == 1){
+                            int playerKilled = jsonObject.getInt("player_killed");
+                            voteResultCivilian(playerKilled);
+                        } else if (statusC == -1){
+                            // No player killed
+                            voteResult();
+                        }
+                        break;
+                    case "vote_result_werewolf":
+                        int statusW = jsonObject.getInt("vote_status");
+                        if(statusW == 1){
+                            int playerKilled = jsonObject.getInt("player_killed");
+                            voteResultWerewolf(playerKilled);
+                        } else if (statusW == -1){
+                            // No player killed
+                            voteResult();
+                        }
+                        break;
+                    case "accepted_proposal":
+                        int kpuId = jsonObject.getInt("kpu_id");
+                        break;
                     default:
                         break;
                 }
+
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -181,7 +211,6 @@ public class ChatServer implements Runnable {
             }
             i++;
         }
-
 
         // Check if port existed
         boolean portExists = false;
@@ -334,12 +363,160 @@ public class ChatServer implements Runnable {
                     jsonObject.put("status", "ok");
                     jsonObject.put("description", "waiting for other player to start");
                     players[i].setReady(true);
+                    readyCount++;
                     String msg = new String(String.valueOf(jsonObject));
                     clients[findClient(players[i].getAddrPort())].send(msg);
+                    System.out.println(readyCount);
+                    if (readyCount == playerCount){
+                        startGame();
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    /*-------------------------- Method Vote Result Civilian ---------------------------*/
+    void voteResultCivilian(int playerKilled){
+        killPlayer(playerKilled);
+
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("status", "ok");
+            jsonObject.put("description", "");
+
+//            jsonObject.put("status", "ok");
+//            if (success == 1)
+//                jsonObject.put("description", "vote successful");
+//            else
+//                jsonObject.put("description", "vote failed");
+
+            String msg = String.valueOf(jsonObject);
+            // Kirim ke KPU
+            clients[findClient(players[0].getAddrPort())].send(msg);
+        } catch (JSONException e){
+            e.printStackTrace();
+        }
+    }
+
+
+    /*-------------------------- Method Vote Result Werewolf ---------------------------*/
+    void voteResultWerewolf(int playerKilled){
+        killPlayer(playerKilled);
+
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("status", "ok");
+            jsonObject.put("description", "");
+
+            String msg = String.valueOf(jsonObject);
+            // Kirim ke KPU
+            clients[findClient(players[0].getAddrPort())].send(msg);
+        } catch (JSONException e){
+            e.printStackTrace();
+        }
+    }
+
+    void killPlayer(int id){
+        players[id].setAlive(Player.DEAD);
+        if(players[id].getRolePlayer().equals("werewolf")){
+            nWerewolf--;
+        } else {
+            nCivilian--;
+        }
+
+        if(nWerewolf == nCivilian){
+            gameOver("werewolf");
+        } else if (nWerewolf == 0) {
+            gameOver("civilian");
+        }
+    }
+
+    void gameOver(String winner){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("method", "game_over");
+            jsonObject.put("winner", winner);
+            jsonObject.put("description", "");
+
+            String msg = String.valueOf(jsonObject);
+            // Kirim ke KPU
+            clients[findClient(players[0].getAddrPort())].send(msg);
+        } catch (JSONException e){
+            e.printStackTrace();
+        }
+    }
+
+    /*-------------------------- Method Vote Result ---------------------------*/
+    void voteResult(){
+        // Revote
+    }
+
+    /*-------------------------- Method Change Phase ---------------------------*/
+    void changePhase(){
+
+    }
+
+    /*-------------------------- Method Start Game---------------------------*/
+    void startGame(){
+        try {
+            Random rand = new Random();
+            nWerewolf = playerCount/3;
+            nCivilian = playerCount - nWerewolf;
+
+            int i = 0;
+            /* Assign siapa werewolf nya */
+            while (i < nWerewolf){
+                int id = rand.nextInt(playerCount);
+                if ((players[id].getRolePlayer() != null) && (players[id].getRolePlayer().equals("werewolf"))){
+                    /* do nothing */
+                } else {
+                    players[id].setRolePlayer("werewolf");
+                    i++;
+                }
+            }
+            i = 0;
+            /* Assign siapa civilian nya */
+            while (i < playerCount){
+                if (players[i].getRolePlayer() != null){
+                    i++;
+                } else {
+                    players[i].setRolePlayer("civilian");
+                }
+            }
+
+            i = 0;
+
+            while (i < playerCount){
+                JSONObject jsonObject = new JSONObject();
+
+                jsonObject.put("method", "start");
+                jsonObject.put("time", "day");
+                if (players[i].getRolePlayer().equals("werewolf")) {
+                    jsonObject.put("role", "werewolf");
+                    int count = 0;
+                    String[] s = new String[nWerewolf - 1];
+                    for (int j = 0; j < playerCount; j++){
+                        if (players[j].getRolePlayer().equals("werewolf")){
+                            if (i == j) {
+                                /* do nothing */
+                            } else {
+                                s[count] = players[j].getUsername();
+                            }
+                        }
+                    }
+                    jsonObject.put("friend", s);
+                } else {
+                    jsonObject.put("role", "civilian");
+                }
+                jsonObject.put("description", "game is started");
+                String msg = String.valueOf(jsonObject);
+                clients[findClient(players[i].getAddrPort())].send(msg);
+                i++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

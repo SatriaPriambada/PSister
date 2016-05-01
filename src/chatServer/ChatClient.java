@@ -81,9 +81,6 @@ public class ChatClient implements Runnable
                         jsonObject.put("method", "get_server");
                         jsonObject.put("server", "127.0.0.1");
                         jsonObject.put("port", "9876");
-                        System.out.println(jsonObject.toString());
-                        streamOut.writeUTF(jsonObject.toString());
-                        streamOut.flush();
                         break;
                     case "join":
                         Scanner scanner = new Scanner(System.in);
@@ -94,15 +91,9 @@ public class ChatClient implements Runnable
                         jsonObject.put("udp_address", currentPlayer.getAddrIp());
                         jsonObject.put("udp_port", currentPlayer.getAddrPort());
                         currentPlayer.setUsername(username);
-                        System.out.println(jsonObject.toString());
-                        streamOut.writeUTF(jsonObject.toString());
-                        streamOut.flush();
                         break;
                     case "leave":
                         jsonObject.put("method", "leave");
-                        System.out.println(jsonObject.toString());
-                        streamOut.writeUTF(jsonObject.toString());
-                        streamOut.flush();
                         break;
                     case "ready":
                         if (currentPlayer.getId() != Player.ID_NOT_SET) {
@@ -110,21 +101,29 @@ public class ChatClient implements Runnable
                         } else {
                             System.out.println("You have not joined the game");
                         }
-                        System.out.println(jsonObject.toString());
-                        streamOut.writeUTF(jsonObject.toString());
-                        streamOut.flush();
                         break;
                     case "client_address":
                         jsonObject.put("method", "client_address");
-                        System.out.println(jsonObject.toString());
-                        streamOut.writeUTF(jsonObject.toString());
-                        streamOut.flush();
+                        break;
+                    case "toClient":
+                        System.out.println("ToClient");
+                        break;
+                    case "prepare_proposal":
+                        prepareProposal();
+                        break;
+                    case "accept_proposal":
+                        acceptProposal();
+                        break;
+                    case "vote_civilian":
+                        voteCivilian();
                         break;
                     default:
-                        jsonObject.put("status","error");
-                        jsonObject.put("description","wrong request");
+                        jsonObject = reqJSON("error");
                         break;
                 }
+                System.out.println(jsonObject.toString());
+                streamOut.writeUTF(jsonObject.toString());
+                streamOut.flush();
 
             } catch (JSONException j){
                 j.printStackTrace();
@@ -160,15 +159,7 @@ public class ChatClient implements Runnable
                                     players[i].setAddrIp(json.getString("address"));
                                     players[i].setAddrPort(json.getInt("port"));
                                     players[i].setUsername(json.getString("username"));
-                                    System.out.println(players[i].toString());
-                                }
-                                numberPlayer = jsonArray.length();
-                                //Set player ID N and N-1 as proposer and other as acceptor
-                                if (currentPlayer.getId() >= numberPlayer - 2){
-                                    currentPlayer.setStatusPaxos("proposer");
-                                    prepareProposal();
-                                } else {
-                                    currentPlayer.setStatusPaxos("acceptor");
+
                                 }
                                 break;
                             default:
@@ -178,7 +169,7 @@ public class ChatClient implements Runnable
                     if(jsonObject.has("player_id")){
                         currentPlayer.setId(jsonObject.getInt("player_id"));
                     }
-//                    System.out.println("Status: " + jsonObject.getString("status"));
+                    System.out.println("Status: " + jsonObject.getString("status"));
                 }
                 System.out.println("Current player: " + currentPlayer);
 
@@ -457,6 +448,38 @@ public class ChatClient implements Runnable
             System.out.println("Usage: java ChatClient host port");
         else
             client = new ChatClient(args[0], Integer.parseInt(args[1]));
+    }
+
+    /*-------------------------- Method Vote Result civilian ---------------------------*/
+    void voteResultCivilian(){
+        JSONObject jsonObject = new JSONObject();
+        boolean voteSuccess = true;
+        try {
+            if (voteSuccess) {
+                jsonObject.put("method", "vote_result_civilian");
+                jsonObject.put("vote_status", 1);
+                jsonObject.put("player_killed", 4);
+                jsonObject.put("vote_result", "[0,1], [1,2],...");
+            } else {
+                jsonObject.put("method", "vote_result_civilian");
+                jsonObject.put("vote_status", -1);
+                jsonObject.put("vote_result", "[0,1], [1,2],...");
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /*-------------------------- Method KPU Selected---------------------------*/
+    void KPUSelected(int playerId){
+//        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+//            System.out.println("I am proposer");
+//        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
+//            System.out.println("I am acceptor");
+//        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+//            System.out.println("I am KPU leader");
+//        }
+
     }
 
 }

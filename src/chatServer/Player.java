@@ -13,8 +13,8 @@ public class Player {
     private int id;
     private String username;
     private int alive;
-    private String StatusPaxos;
-    private String RolePlayer;
+    private String statusPaxos;
+    private String rolePlayer;
     private boolean isReady;
 
     public boolean isReady() {
@@ -69,11 +69,11 @@ public class Player {
     }
 
     public String getRolePlayer() {
-        return RolePlayer;
+        return rolePlayer;
     }
 
     public void setRolePlayer(String RolePlayer) {
-        this.RolePlayer = RolePlayer;
+        this.rolePlayer = RolePlayer;
     }
 
     public String getUsername() {
@@ -85,11 +85,11 @@ public class Player {
     }
 
     public String getStatusPaxos() {
-        return StatusPaxos;
+        return statusPaxos;
     }
 
     public void setStatusPaxos(String StatusPaxos) {
-        this.StatusPaxos = StatusPaxos;
+        this.statusPaxos = StatusPaxos;
     }
 
     public String toString(){
