@@ -217,6 +217,7 @@ public class UDPReceiver extends Thread
         //System.out.println("My ID "+currentPlayer.getId() + "candidate " + candidateLeader);
         if(currentPlayer.getId() != candidateLeader) {
             System.out.println("ALL FINISHED");
+            client.KPUSelected(candidateLeader);
         }
 
     }
