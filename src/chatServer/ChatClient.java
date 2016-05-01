@@ -141,14 +141,22 @@ public class ChatClient implements Runnable
                         switch (desc) {
                             case "list of clients retrieved":
                                 JSONArray jsonArray = new JSONArray(jsonObject.get("clients").toString());
-                                for (int i = 0; i < jsonArray.length(); i++) {
+                                int i;
+                                for (i = 0; i < jsonArray.length(); i++) {
                                     JSONObject json = jsonArray.getJSONObject(i);
                                     players[i].setId(json.getInt("player_id"));
                                     players[i].setAlive(json.getInt("is_alive"));
                                     players[i].setAddrIp(json.getString("address"));
                                     players[i].setAddrPort(json.getInt("port"));
                                     players[i].setUsername(json.getString("username"));
-
+                                }
+                                numberPlayer = i;
+                                System.out.println(numberPlayer);
+                                if(currentPlayer.getId() >= numberPlayer-2) {
+                                    currentPlayer.setStatusPaxos("proposer");
+                                    prepareProposal();
+                                } else {
+                                    currentPlayer.setStatusPaxos("acceptor");
                                 }
                                 break;
                             default:
@@ -158,11 +166,18 @@ public class ChatClient implements Runnable
                     if(jsonObject.has("player_id")){
                         currentPlayer.setId(jsonObject.getInt("player_id"));
                     }
-                    System.out.println("Status: " + jsonObject.getString("status"));
+//                    System.out.println("Status: " + jsonObject.getString("status"));
+                } else if (jsonObject.has("method")){
+                    if(jsonObject.getString("method").equals("start")){
+                        currentPlayer.setRolePlayer(jsonObject.getString("role"));
+                        Time = jsonObject.getString("time");
+                    }
                 }
-                System.out.println("Current player: " + currentPlayer);
+//                System.out.println("Current player: " + currentPlayer);
 
             } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }

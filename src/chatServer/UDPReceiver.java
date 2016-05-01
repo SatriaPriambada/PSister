@@ -31,7 +31,7 @@ public class UDPReceiver extends Thread
     private UDPTransmitter udpTransmitter;
     private boolean accept = false;
     private boolean acceptLeader = false;
-    private boolean finishElection = false;
+private static boolean finishElection = false;
     private int currentLeader = Player.ID_NOT_SET;
     private int previousLeader = Player.ID_NOT_SET;
     private String Time = "day";
