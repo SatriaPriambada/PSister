@@ -30,7 +30,7 @@ public class ChatClient implements Runnable
     private int currentLeader = Player.ID_NOT_SET;
     private int previousLeader = Player.ID_NOT_SET;
     private int numberPlayer;
-    private String Time = "night";
+    private String Time = "day";
     private int[] listVote = new int[ChatServer.PLAYER_SIZE];
     private int numberWerewolf = 2;
     private int numberCivilian = 4;
@@ -105,20 +105,9 @@ public class ChatClient implements Runnable
                     case "client_address":
                         jsonObject.put("method", "client_address");
                         break;
-                    case "toClient":
-                        System.out.println("ToClient");
-                        break;
-                    case "prepare_proposal":
-                        prepareProposal();
-                        break;
-                    case "accept_proposal":
-                        acceptProposal();
-                        break;
-                    case "vote_civilian":
-                        voteCivilian();
-                        break;
                     default:
-                        jsonObject = reqJSON("error");
+                        jsonObject.put("status","error");
+                        jsonObject.put("description","wrong request");
                         break;
                 }
                 System.out.println(jsonObject.toString());
@@ -174,8 +163,6 @@ public class ChatClient implements Runnable
                 System.out.println("Current player: " + currentPlayer);
 
             } catch (JSONException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -450,7 +437,7 @@ public class ChatClient implements Runnable
             client = new ChatClient(args[0], Integer.parseInt(args[1]));
     }
 
-    /*-------------------------- Method Vote Result civilian ---------------------------*/
+   /* *//*-------------------------- Method Vote Result civilian ---------------------------*//*
     void voteResultCivilian(){
         JSONObject jsonObject = new JSONObject();
         boolean voteSuccess = true;
@@ -469,7 +456,7 @@ public class ChatClient implements Runnable
             e.printStackTrace();
         }
     }
-
+*/
     /*-------------------------- Method KPU Selected---------------------------*/
     void KPUSelected(int playerId){
 //        if(this.currentPlayer.getStatusPaxos().equals("proposer")){

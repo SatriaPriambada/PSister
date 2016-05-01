@@ -112,6 +112,8 @@ public class UDPReceiver extends Thread
                                         }
                                         finishElection = true;
                                     }
+                                } else {
+                                    accept = false;
                                 }
                             } else if (jsonObject.getString("description").equalsIgnoreCase("")) {
                                 if (Time.equals("day") && countVote == client.getNumberPlayer()){
