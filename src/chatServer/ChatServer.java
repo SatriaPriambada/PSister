@@ -546,7 +546,7 @@ public class ChatServer implements Runnable {
             JSONObject jsonObj = new JSONObject();
             jsonObj.put("method", "vote_now");
             jsonObj.put("phase", Time);
-            msg = String.valueOf(json);
+            msg = String.valueOf(jsonObj);
             for (int i = 0; i < playerCount; i++) {
                 clients[findClient(players[i].getAddrPort())].send(msg);
             }
