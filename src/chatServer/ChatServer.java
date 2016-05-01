@@ -94,9 +94,9 @@ public class ChatServer implements Runnable {
             System.out.println(input);
             try {
                 JSONObject jsonObject = new JSONObject(input);
-                String method = jsonObject.getString("method");
 
                 if(jsonObject.has("method")){
+                    String method = jsonObject.getString("method");
                     switch (method){
                         case "join":
                             // Join Client
@@ -348,6 +348,8 @@ public class ChatServer implements Runnable {
             }
 
         }
+
+        System.out.println("Selesai Client Address");
     }
 
     /*-------------------------- Method Ready ---------------------------*/
@@ -583,9 +585,9 @@ public class ChatServer implements Runnable {
                     clients[findClient(players[i].getAddrPort())].send(msg);
             }
 
-            while(kpuCounter < (playerCount - 1)){
-                // wait
-            }
+//            while(kpuCounter < (playerCount - 1)){
+//                // wait
+//            }
 
             id = maxID(voteKPU);
 

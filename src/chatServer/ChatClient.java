@@ -159,10 +159,14 @@ public class ChatClient implements Runnable
                                 System.out.println(numberPlayer);
                                 if(currentPlayer.getId() >= numberPlayer-2) {
                                     currentPlayer.setStatusPaxos("proposer");
-                                    //prepareProposal();
+                                    prepareProposal();
+
+                                    System.out.println("Selesai Prepare Proposal");
                                 } else {
                                     currentPlayer.setStatusPaxos("acceptor");
                                     KPUSelected(currentPlayer.getId());
+
+                                    System.out.println("Selesai KPU Selected");
                                 }
                                 break;
                             default:
@@ -197,13 +201,13 @@ public class ChatClient implements Runnable
                         VoteNow(currentLeader);
                     }
                 }
-//                System.out.println("Current player: " + currentPlayer);
+                System.out.println("Current player: " + currentPlayer);
 
             } catch (JSONException e) {
                 e.printStackTrace();
-            } /*catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 e.printStackTrace();
-            }*/ catch (IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
@@ -285,10 +289,11 @@ public class ChatClient implements Runnable
     public void voteWerewolf(){
         if(this.currentPlayer.getRolePlayer().equals("werewolf")){
             System.out.println("I am werewolf");
-            System.out.print("Pilih ID pemain yang akan dibunuh: ");
             Scanner scanner = new Scanner(System.in);
-            String kill = scanner.next();
-            int index = Integer.valueOf(kill);
+            scanner.nextLine();
+            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+            int index = scanner.nextInt();
+            System.out.println("ID telah dimasukkan");
             listVote[index] = listVote[index]++;
             transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
             JSONObject jsonObject = new JSONObject();
