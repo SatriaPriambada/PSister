@@ -177,16 +177,11 @@ public class ChatClient implements Runnable
                     if(jsonObject.getString("method").equals("start")){
                         currentPlayer.setRolePlayer(jsonObject.getString("role"));
                         Time = jsonObject.getString("time");
-<<<<<<< HEAD
-                    } else if(jsonObject.getString("method").equals("kpu_selected")) {
-=======
                     } else if(jsonObject.getString("method").equals("kpu_selected")){
->>>>>>> origin/master
                         JSONObject json = new JSONObject();
                         json.put("status", "ok");
                         streamOut.writeUTF(json.toString());
                         streamOut.flush();
-<<<<<<< HEAD
                         if (currentLeader == Player.ID_NOT_SET)
                             currentLeader = jsonObject.getInt("kpu_id");
                         else {
@@ -199,8 +194,6 @@ public class ChatClient implements Runnable
                         streamOut.writeUTF(json.toString());
                         streamOut.flush();
                         Time = jsonObject.getString("phase");
-=======
->>>>>>> origin/master
                     }
                 }
 //                System.out.println("Current player: " + currentPlayer);

@@ -543,7 +543,6 @@ public class ChatServer implements Runnable {
                 clients[findClient(players[i].getAddrPort())].send(msg);
             }
 
-<<<<<<< HEAD
             JSONObject jsonObj = new JSONObject();
             jsonObj.put("method", "vote_now");
             jsonObj.put("phase", Time);
@@ -551,8 +550,6 @@ public class ChatServer implements Runnable {
             for (int i = 0; i < playerCount; i++) {
                 clients[findClient(players[i].getAddrPort())].send(msg);
             }
-=======
->>>>>>> origin/master
         } catch (JSONException e) {
             e.printStackTrace();
         }
