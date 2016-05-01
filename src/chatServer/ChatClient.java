@@ -109,16 +109,27 @@ public class ChatClient implements Runnable
                         jsonObject.put("method", "client_address");
                         break;
                     case "vote_civilian":
-                        scanner = new Scanner(System.in);
-                        System.out.print("Pilih ID pemain yang akan dibunuh: ");
-                        int index = scanner.nextInt();
-                        voteCivilian(index);
+                        if (Time.equals("day")){
+                            scanner = new Scanner(System.in);
+                            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+                            int index = scanner.nextInt();
+                            voteCivilian(index);
+                        } else {
+                            System.out.println("Hari sedang malam, gunakan vote_werewolf");
+                        }
                         break;
                     case "vote_werewolf":
-                        scanner = new Scanner(System.in);
-                        System.out.print("Pilih ID pemain yang akan dibunuh: ");
-                        index = scanner.nextInt();
-                        voteWerewolf(index);
+                        if (Time.equals("night")) {
+                            scanner = new Scanner(System.in);
+                            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+                            int index = scanner.nextInt();
+                            voteWerewolf(index);
+                        } else {
+                            System.out.println("Hari sedang siang, gunakan vote_civilian");
+                        }
+                        break;
+                    case "change_phase":
+                        Time = jsonObject.getString("time");
                         break;
                     default:
                         jsonObject.put("status","error");
@@ -324,7 +335,8 @@ public class ChatClient implements Runnable
         System.out.println("My leader is " + currentLeader);
         JSONObject jsonObject = new JSONObject();
         if(this.currentPlayer.getStatusPaxos().equals("leader")){
-            for (int i = 0; i < numberPlayer; i++){
+            int i;
+            for (i = 0; i < numberPlayer; i++){
                 if (listVote[i] > numberWerewolf / 2){
                     try {
                         jsonObject.put("method", "vote_result_werewolf");
@@ -352,36 +364,38 @@ public class ChatClient implements Runnable
                     }
                     break;
                 }
-                //check if there is no break in the loop means no majority
-                if (i == numberPlayer){
-                    System.out.println("No Majority Werewolf needs to redo choosing");
 
-                    try {
-                        jsonObject.put("method", "vote_result");
-                        jsonObject.put("vote_status", "-1");
-                        JSONArray jsonArray = new JSONArray();
-                        for (int j = 0; j < numberPlayer; j++){
-                            JSONObject tempJsonObject = new JSONObject();
-                            try {
-                                tempJsonObject.put(String.valueOf(j), listVote[j]);
-                                jsonArray.put(tempJsonObject);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
+            }
+
+            //check if there is no break in the loop means no majority
+            if (i == numberPlayer){
+                System.out.println("No Majority Werewolf needs to redo choosing");
+
+                try {
+                    jsonObject.put("method", "vote_result");
+                    jsonObject.put("vote_status", "-1");
+                    JSONArray jsonArray = new JSONArray();
+                    for (int j = 0; j < numberPlayer; j++){
+                        JSONObject tempJsonObject = new JSONObject();
+                        try {
+                            tempJsonObject.put(String.valueOf(j), listVote[j]);
+                            jsonArray.put(tempJsonObject);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
                         }
-                        jsonObject.put("vote_result", jsonArray);
-
-                        //send result to the server
-
-                        streamOut.writeUTF(jsonObject.toString());
-                        streamOut.flush();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
+                    jsonObject.put("vote_result", jsonArray);
 
+                    //send result to the server
+
+                    streamOut.writeUTF(jsonObject.toString());
+                    streamOut.flush();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+
             }
         }
 
@@ -461,7 +475,6 @@ public class ChatClient implements Runnable
                     }
 
                 }
-                System.out.println("there is no majority lets redo " + i);
 
                 //check if there is no break in the loop means no majority
                 if (i == numberPlayer) {
