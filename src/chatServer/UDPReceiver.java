@@ -120,6 +120,9 @@ public class UDPReceiver extends Thread
                                             System.out.println("Set client " + i + " to " + finishElection);
                                             System.out.println(players[i]);
                                         }
+
+                                        System.out.println("ALL FINISHED");
+                                        client.KPUSelected(currentLeader);
                                     }
                                 } else {
                                     accept = false;
