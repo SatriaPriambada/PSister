@@ -34,6 +34,8 @@ public class UDPReceiver extends Thread
     private boolean finishElection = false;
     private int currentLeader = Player.ID_NOT_SET;
     private int previousLeader = Player.ID_NOT_SET;
+    private String Time = "day";
+    private int countVote = 0;
 
     public int getCurrentLeader(){
         return currentLeader;
@@ -100,7 +102,7 @@ public class UDPReceiver extends Thread
                                         acceptLeader = true;
                                     } else {
                                         System.out.println("LEADER IS SELECTED : " + leaderCandidate);
-                                        finishElection = true;
+                                        currentPlayer.setStatusPaxos("leader");
                                         //first selection
                                         if (currentLeader == Player.ID_NOT_SET) {
                                             currentLeader = leaderCandidate;
@@ -108,7 +110,16 @@ public class UDPReceiver extends Thread
                                             previousLeader = currentLeader;
                                             currentLeader = leaderCandidate;
                                         }
+                                        finishElection = true;
                                     }
+                                }
+                            } else if (jsonObject.getString("description").equalsIgnoreCase("")) {
+                                if (Time.equals("day") && countVote == client.getNumberPlayer()){
+                                    client.voteResultCivilian();
+                                    countVote = 0;
+                                } else if (Time.equals("night") && countVote == client.getNumberPlayer()){
+                                    client.voteResultWerewolf();
+                                    countVote = 0;
                                 }
                             } else {
                                 System.out.println(jsonObject);
@@ -123,7 +134,8 @@ public class UDPReceiver extends Thread
                 }
 
                 if(finishElection) {
-                    client.VoteNow();
+                    System.out.println("Finish leader election");
+                    client.VoteNow(currentLeader);
                 }
             }
 
@@ -197,23 +209,65 @@ public class UDPReceiver extends Thread
 
     /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
     void voteWerewolfResponse(){
-        if(currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer");
-        } else if (currentPlayer.getStatusPaxos().equals("acceptor")) {
-            System.out.println("I am acceptor");
-        } else if (currentPlayer.getStatusPaxos().equals("leader")) {
+        if (currentPlayer.getStatusPaxos().equals("leader")) {
+            boolean once = true;
             System.out.println("I am KPU leader");
+            JSONObject jsonObject = new JSONObject();
+            Time = "night";
+
+            try {
+                //each node can only vote once
+                if(once) {
+                    jsonObject.put("status", "ok");
+                    jsonObject.put("description", "");
+                    once = false;
+                    countVote++;
+                } else {
+                    jsonObject.put("status", "fail");
+                    jsonObject.put("description", "");
+                }
+
+                udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
+                udpTransmitter.reply(jsonObject.toString());
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 
     /*-------------------------- Method Vote Civillian Paxos---------------------------*/
     void voteCivilianResponse(){
-        if(currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer");
-        } else if (currentPlayer.getStatusPaxos().equals("acceptor")) {
-            System.out.println("I am acceptor");
-        } else if (currentPlayer.getStatusPaxos().equals("leader")) {
+        if (currentPlayer.getStatusPaxos().equals("leader")) {
+            boolean once = true;
             System.out.println("I am KPU leader");
+            JSONObject jsonObject = new JSONObject();
+            Time = "day";
+
+            try {
+                //each node can only vote once
+                if(once) {
+                    jsonObject.put("status", "ok");
+                    jsonObject.put("description", "");
+                    once = false;
+                    countVote++;
+                } else {
+                    jsonObject.put("status", "fail");
+                    jsonObject.put("description", "");
+                }
+
+                udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
+                udpTransmitter.reply(jsonObject.toString());
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 }

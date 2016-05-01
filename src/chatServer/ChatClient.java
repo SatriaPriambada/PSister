@@ -31,6 +31,10 @@ public class ChatClient implements Runnable
     private int previousLeader = Player.ID_NOT_SET;
     private int numberPlayer;
     private String Time = "night";
+    private int[] listVote = new int[ChatServer.PLAYER_SIZE];
+    private int numberWerewolf = 2;
+    private int numberCivilian = 4;
+    private int tryKill = 0;
 
     public Player getCurrentPlayer(){
         return currentPlayer;
@@ -52,6 +56,7 @@ public class ChatClient implements Runnable
         System.out.println("Establishing connection. Please wait ...");
         for (int i = 0; i < ChatServer.PLAYER_SIZE; i++){
             players[i] = new Player();
+            listVote[i] = 0;
         }
         try {
             socket = new Socket(serverName, serverPort);
@@ -70,7 +75,6 @@ public class ChatClient implements Runnable
         while (thread != null) {
             try {
                 String read = console.readLine();
-                System.out.println("Read: " + read);
                 JSONObject jsonObject = new JSONObject();
                 switch (read) {
                     case "server":
@@ -115,12 +119,6 @@ public class ChatClient implements Runnable
                         System.out.println(jsonObject.toString());
                         streamOut.writeUTF(jsonObject.toString());
                         streamOut.flush();
-                        break;
-                    case "vote_werewolf":
-                        voteWerewolf();
-                        break;
-                    case "vote_civilian":
-                        voteCivilian();
                         break;
                     default:
                         jsonObject.put("status","error");
@@ -172,7 +170,8 @@ public class ChatClient implements Runnable
                                 } else {
                                     currentPlayer.setStatusPaxos("acceptor");
                                 }
-
+                                break;
+                            default:
                                 break;
                         }
                     }
@@ -265,28 +264,186 @@ public class ChatClient implements Runnable
 
     /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
     public void voteWerewolf(){
-        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer");
-        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
-            System.out.println("I am acceptor");
-        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leader");
+        if(this.currentPlayer.getRolePlayer().equals("werewolf")){
+            System.out.println("I am werewolf");
+            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+            Scanner scanner = new Scanner(System.in);
+            String kill = scanner.next();
+            int index = Integer.valueOf(kill);
+            listVote[index] = listVote[index]++;
+            transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
+            JSONObject jsonObject = new JSONObject();
+
+            try {
+                jsonObject.put("method", "vote_werewolf");
+                jsonObject.put("player_id", index);
+                transmitterUDP.send(jsonObject.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        } else if (this.currentPlayer.getRolePlayer().equals("civilian")) {
+            System.out.println("I am civilian waiting for the night");
+        } else if (this.currentPlayer.getRolePlayer().equals("dead")) {
+            System.out.println("I am dead waiting for the night");
         }
+    }
+
+    public void voteResultWerewolf(){
+        JSONObject jsonObject = new JSONObject();
+        if(this.currentPlayer.getStatusPaxos().equals("leader")){
+            for (int i = 0; i < numberPlayer; i++){
+                if (listVote[i] > numberWerewolf / 2){
+                    try {
+                        jsonObject.put("method", "vote_result_werewolf");
+                        jsonObject.put("vote_status", "1");
+                        jsonObject.put("player_killed", i);
+                        JSONArray jsonArray = new JSONArray();
+                        for (int j = 0; j < numberPlayer; j++){
+                            JSONObject tempJsonObject = new JSONObject();
+                            try {
+                                tempJsonObject.put(String.valueOf(i), listVote[i]);
+                                jsonArray.put(tempJsonObject);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        jsonObject.put("vote_result", jsonArray);
+                        //send result to the server
+
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+                //check if there is no break in the loop means no majority
+                if (i == numberPlayer){
+                    System.out.println("No Majority Werewolf needs to redo choosing");
+
+                    try {
+                        jsonObject.put("method", "vote_result");
+                        jsonObject.put("vote_status", "-1");
+                        JSONArray jsonArray = new JSONArray();
+                        for (int j = 0; j < numberPlayer; j++){
+                            JSONObject tempJsonObject = new JSONObject();
+                            try {
+                                tempJsonObject.put(String.valueOf(i), listVote[i]);
+                                jsonArray.put(tempJsonObject);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        jsonObject.put("vote_result", jsonArray);
+
+                        //send result to the server
+
+                        streamOut.writeUTF(jsonObject.toString());
+                        streamOut.flush();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }
+        }
+
     }
 
     /*-------------------------- Method Vote Civillian Paxos---------------------------*/
     public void voteCivilian(){
-        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
-            System.out.println("I am proposer");
-        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
-            System.out.println("I am acceptor");
-        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
-            System.out.println("I am KPU leader");
+        if(this.currentPlayer.getRolePlayer().equals("werewolf")){
+            System.out.println("I am werewolf");
+        } else if (this.currentPlayer.getRolePlayer().equals("civilian")) {
+            System.out.println("I am civilian");
+        } else if (this.currentPlayer.getStatusPaxos().equals("dead")) {
+            System.out.println("I am dead waiting for the day");
         }
 
     }
 
-    public void VoteNow(){
+    public void voteResultCivilian(){
+        JSONObject jsonObject = new JSONObject();
+        if (tryKill <= 2) {
+            if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+                for (int i = 0; i < numberPlayer; i++) {
+                    if (listVote[i] > numberCivilian / 2) {
+                        try {
+                            jsonObject.put("method", "vote_result_civilian");
+                            jsonObject.put("vote_status", "1");
+                            jsonObject.put("player_killed", i);
+                            JSONArray jsonArray = new JSONArray();
+                            for (int j = 0; j < numberPlayer; j++) {
+                                JSONObject tempJsonObject = new JSONObject();
+                                try {
+                                    tempJsonObject.put(String.valueOf(i), listVote[i]);
+                                    jsonArray.put(tempJsonObject);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            jsonObject.put("vote_result", jsonArray);
+                            //send result to the server
+
+                            streamOut.writeUTF(jsonObject.toString());
+                            streamOut.flush();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    }
+                    //check if there is no break in the loop means no majority
+                    if (i == numberPlayer) {
+                        System.out.println("No Majority player needs to redo choosing");
+
+                        try {
+                            jsonObject.put("method", "vote_result");
+                            jsonObject.put("vote_status", "-1");
+                            JSONArray jsonArray = new JSONArray();
+                            for (int j = 0; j < numberPlayer; j++) {
+                                JSONObject tempJsonObject = new JSONObject();
+                                try {
+                                    tempJsonObject.put(String.valueOf(i), listVote[i]);
+                                    jsonArray.put(tempJsonObject);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            jsonObject.put("vote_result", jsonArray);
+
+                            //send result to the server
+
+                            streamOut.writeUTF(jsonObject.toString());
+                            streamOut.flush();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        tryKill++;
+
+                    }
+                }
+            }
+        } else {
+            tryKill = 0;
+        }
+    }
+
+    public void VoteNow(int Leader){
+        currentLeader = Leader;
+        if (currentPlayer.getId() == currentLeader){
+            currentPlayer.setStatusPaxos("leader");
+        }
         if(Time.equals("day")){
             voteCivilian();
         } else if (Time.equals("night")){
