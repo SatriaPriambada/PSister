@@ -24,6 +24,7 @@ public class UDPReceiver extends Thread
 	private DataInputStream streamIn  =  null;
 	private DataOutputStream streamOut = null;
     private int counter = 0;
+    private int[] listVote = new int[ChatServer.PLAYER_SIZE];
 
     private Player currentPlayer;
     private Player[] players = new Player [ChatServer.PLAYER_SIZE];
@@ -57,6 +58,7 @@ public class UDPReceiver extends Thread
 		start();
         for (int q = 0; q < client.getNumberPlayer(); q++) {
             voteResult.set(q,0);
+            listVote[q] = 0;
         }
 
 	}
@@ -87,9 +89,9 @@ public class UDPReceiver extends Thread
                     } else if (method.equals("accept_proposal")) {
                         acceptProposalResponse(jsonObject.getInt("kpu_id"));
                     } else if (method.equals("vote_werewolf")) {
-                        voteWerewolfResponse();
+                        voteWerewolfResponse(jsonObject.getInt("player_id"));
                     } else if (method.equals("vote_civilian")) {
-                        voteCivilianResponse();
+                        voteCivilianResponse(jsonObject.getInt("player_id"));
                     } else {
                         System.out.println(method + "does not exist");
                     }
@@ -225,10 +227,10 @@ public class UDPReceiver extends Thread
     }
 
     /*-------------------------- Method Vote Werewolf Paxos---------------------------*/
-    void voteWerewolfResponse(){
+    void voteWerewolfResponse(int killPlayer){
         if (currentPlayer.getStatusPaxos().equals("leader")) {
             boolean once = true;
-            System.out.println("I am KPU leader");
+            System.out.println("I am KPU leader werewolf response");
             JSONObject jsonObject = new JSONObject();
             Time = "night";
 
@@ -238,6 +240,11 @@ public class UDPReceiver extends Thread
                     jsonObject.put("status", "ok");
                     jsonObject.put("description", "");
                     once = false;
+                    int before = listVote[killPlayer];
+                    listVote[killPlayer] = before + 1;
+                    for (int i = 0; i < client.getNumberPlayer(); i++) {
+                        System.out.print(listVote[i] + " ");
+                    }
                     countVote++;
                 } else {
                     jsonObject.put("status", "fail");
@@ -246,6 +253,24 @@ public class UDPReceiver extends Thread
 
                 udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
                 udpTransmitter.reply(jsonObject.toString());
+
+                System.out.println("vote count = " + countVote);
+                for (int i = 0; i < client.getNumberPlayer(); i++) {
+                    System.out.print(listVote[i] + " ");
+                }
+
+                if (countVote == client.getNumberPlayer()) {
+                    if (Time.equals("day")) {
+                        for (int i = 0; i < client.getNumberPlayer(); i++) {
+                            System.out.print(listVote[i] + " ");
+                        }
+                        client.voteResultCivilian(listVote);
+                        countVote = 0;
+                    } else if (Time.equals("night")) {
+                        client.voteResultWerewolf(listVote);
+                        countVote = 0;
+                    }
+                }
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -257,10 +282,11 @@ public class UDPReceiver extends Thread
     }
 
     /*-------------------------- Method Vote Civillian Paxos---------------------------*/
-    void voteCivilianResponse(){
+    void voteCivilianResponse(int killPlayer){
+        //System.out.println("Leader is " );
         if (currentPlayer.getStatusPaxos().equals("leader")) {
             boolean once = true;
-            System.out.println("I am KPU leader");
+            System.out.println("I am KPU leader civilian response");
             JSONObject jsonObject = new JSONObject();
             Time = "day";
 
@@ -270,6 +296,11 @@ public class UDPReceiver extends Thread
                     jsonObject.put("status", "ok");
                     jsonObject.put("description", "");
                     once = false;
+                    int before = listVote[killPlayer];
+                    listVote[killPlayer] = before + 1;
+                    for (int i = 0; i < client.getNumberPlayer(); i++) {
+                        System.out.print(listVote[i] + " ");
+                    }
                     countVote++;
                 } else {
                     jsonObject.put("status", "fail");
@@ -282,10 +313,13 @@ public class UDPReceiver extends Thread
 
                 if (countVote == client.getNumberPlayer()) {
                     if (Time.equals("day")) {
-                        client.voteResultCivilian();
+                        for (int i = 0; i < client.getNumberPlayer(); i++) {
+                            System.out.print(listVote[i] + " ");
+                        }
+                        client.voteResultCivilian(listVote);
                         countVote = 0;
                     } else if (Time.equals("night")) {
-                        client.voteResultWerewolf();
+                        client.voteResultWerewolf(listVote);
                         countVote = 0;
                     }
                 }

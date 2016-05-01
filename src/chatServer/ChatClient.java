@@ -31,7 +31,6 @@ public class ChatClient implements Runnable
     private int previousLeader = Player.ID_NOT_SET;
     private int numberPlayer;
     private String Time = "day";
-    private int[] listVote = new int[ChatServer.PLAYER_SIZE];
     private int numberWerewolf = 2;
     private int numberCivilian = 4;
     private int tryKill = 0;
@@ -61,7 +60,6 @@ public class ChatClient implements Runnable
         System.out.println("Establishing connection. Please wait ...");
         for (int i = 0; i < ChatServer.PLAYER_SIZE; i++){
             players[i] = new Player();
-            listVote[i] = 0;
         }
         try {
             socket = new Socket(serverName, serverPort);
@@ -301,7 +299,7 @@ public class ChatClient implements Runnable
         if(this.currentPlayer.getRolePlayer().equals("werewolf")){
             System.out.println("I am werewolf");
             System.out.println("ID telah dimasukkan");
-            listVote[index] = listVote[index]++;
+
             transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
             JSONObject jsonObject = new JSONObject();
 
@@ -322,7 +320,7 @@ public class ChatClient implements Runnable
         }
     }
 
-    public void voteResultWerewolf(){
+    public void voteResultWerewolf(int[] listVote){
         System.out.println("My leader is " + currentLeader);
         JSONObject jsonObject = new JSONObject();
         if(this.currentPlayer.getStatusPaxos().equals("leader")){
@@ -336,7 +334,7 @@ public class ChatClient implements Runnable
                         for (int j = 0; j < numberPlayer; j++){
                             JSONObject tempJsonObject = new JSONObject();
                             try {
-                                tempJsonObject.put(String.valueOf(i), listVote[i]);
+                                tempJsonObject.put(String.valueOf(j), listVote[j]);
                                 jsonArray.put(tempJsonObject);
                             } catch (JSONException e) {
                                 e.printStackTrace();
@@ -365,7 +363,7 @@ public class ChatClient implements Runnable
                         for (int j = 0; j < numberPlayer; j++){
                             JSONObject tempJsonObject = new JSONObject();
                             try {
-                                tempJsonObject.put(String.valueOf(i), listVote[i]);
+                                tempJsonObject.put(String.valueOf(j), listVote[j]);
                                 jsonArray.put(tempJsonObject);
                             } catch (JSONException e) {
                                 e.printStackTrace();
@@ -394,7 +392,7 @@ public class ChatClient implements Runnable
         System.out.println("My leader is " + currentLeader);
         if(this.currentPlayer.getRolePlayer().equals("werewolf")){
             System.out.println("I am werewolf");
-            listVote[index] = listVote[index]++;
+
             transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
             JSONObject jsonObject = new JSONObject();
 
@@ -408,7 +406,7 @@ public class ChatClient implements Runnable
                 e.printStackTrace();
             }
         } else if (this.currentPlayer.getRolePlayer().equals("civilian")) {
-            listVote[index] = listVote[index]++;
+
             transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
             JSONObject jsonObject = new JSONObject();
 
@@ -427,15 +425,14 @@ public class ChatClient implements Runnable
 
     }
 
-    public void voteResultCivilian(){
+    public void voteResultCivilian(int[] listVote){
         System.out.println("My leader is " + currentLeader);
         JSONObject jsonObject = new JSONObject();
         if (tryKill <= 2) {
             if (this.currentPlayer.getStatusPaxos().equals("leader")) {
                 int i;
                 for (i = 0; i < numberPlayer; i++) {
-                    System.out.print(listVote[i] + " , ");
-                    if (listVote[i] > numberCivilian / 2) {
+                    if (listVote[i] > numberPlayer / 2) {
                         try {
                             jsonObject.put("method", "vote_result_civilian");
                             jsonObject.put("vote_status", "1");
@@ -444,7 +441,7 @@ public class ChatClient implements Runnable
                             for (int j = 0; j < numberPlayer; j++) {
                                 JSONObject tempJsonObject = new JSONObject();
                                 try {
-                                    tempJsonObject.put(String.valueOf(i), listVote[i]);
+                                    tempJsonObject.put(String.valueOf(j), listVote[j]);
                                     jsonArray.put(tempJsonObject);
                                 } catch (JSONException e) {
                                     e.printStackTrace();
@@ -477,7 +474,7 @@ public class ChatClient implements Runnable
                         for (int j = 0; j < numberPlayer; j++) {
                             JSONObject tempJsonObject = new JSONObject();
                             try {
-                                tempJsonObject.put(String.valueOf(i), listVote[i]);
+                                tempJsonObject.put(String.valueOf(j), listVote[j]);
                                 jsonArray.put(tempJsonObject);
                             } catch (JSONException e) {
                                 e.printStackTrace();
