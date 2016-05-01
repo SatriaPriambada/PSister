@@ -379,7 +379,7 @@ public class ChatServer implements Runnable {
                     String msg = new String(String.valueOf(jsonObject));
                     clients[findClient(players[i].getAddrPort())].send(msg);
                     System.out.println(readyCount);
-                    if (readyCount == playerCount){
+                    if ((readyCount == playerCount) && (readyCount >= 6)){
                         startGame();
                     }
                 } catch (JSONException e) {
