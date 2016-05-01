@@ -253,6 +253,9 @@ public class ChatServer implements Runnable {
         } else {
             // user and port do not exist
             players[playerCount].setUsername(username);
+            players[playerCount].setAddrIp(udpAddress);
+            players[playerCount].setAddrPort(udpPort);
+            players[playerCount].setId(playerCount);
             try {
                 jsonObject.put("status", "ok");
                 jsonObject.put("player_id", playerCount);
@@ -580,7 +583,7 @@ public class ChatServer implements Runnable {
                     clients[findClient(players[i].getAddrPort())].send(msg);
             }
 
-            while(kpuCounter < playerCount){
+            while(kpuCounter < (playerCount - 1)){
                 // wait
             }
 
@@ -591,24 +594,15 @@ public class ChatServer implements Runnable {
             json.put("kpu_id", id);
 
             msg = String.valueOf(json);
-//            for (int i = 0; i < playerCount; i++) {
-//                clients[findClient(players[i].getAddrPort())].send(msg);
-//            }
             clients[findClient(port)].send(msg);
 
             JSONObject jsonObj = new JSONObject();
             jsonObj.put("method", "vote_now");
             jsonObj.put("phase", Time);
+
             msg = String.valueOf(jsonObj);
-//            for (int i = 0; i < playerCount; i++) {
-//                clients[findClient(players[i].getAddrPort())].send(msg);
-//            }
             clients[findClient(port)].send(msg);
 
-            // For next iteration ?
-//            for(int i=0; i<playerCount; i++){
-//                voteKPU.set(i, 0);
-//            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
