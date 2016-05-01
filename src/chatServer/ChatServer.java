@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
+import java.util.Vector;
 
 public class ChatServer implements Runnable {
     private ChatServerThread clients[] = new ChatServerThread[50];
@@ -28,9 +29,13 @@ public class ChatServer implements Runnable {
     private int nWerewolf = 0;
     private int nCivilian = 0;
 
+    private Vector<Integer> voteKPU = new Vector<>();
+
     private Player[] players = new Player[PLAYER_SIZE];
 
+    private int kpuCounter = 0;
     private String Time = "day";
+    private int day = 1;
 //    private int[] listIsAlive = new int[50];
 //    private String[] listIP = new String[50];
 //    private int[] listPort = new int[50];
@@ -91,56 +96,60 @@ public class ChatServer implements Runnable {
                 JSONObject jsonObject = new JSONObject(input);
                 String method = jsonObject.getString("method");
 
-                switch (method){
-                    case "join":
-                        // Join Client
-                        String clientUname = jsonObject.getString("username");
-                        String clientAddr = jsonObject.getString("udp_address");
-                        int clientPort = jsonObject.getInt("udp_port");
-                        joinClient(clientUname, clientAddr, clientPort);
+                if(jsonObject.has("method")){
+                    switch (method){
+                        case "join":
+                            // Join Client
+                            String clientUname = jsonObject.getString("username");
+                            String clientAddr = jsonObject.getString("udp_address");
+                            int clientPort = jsonObject.getInt("udp_port");
+                            joinClient(clientUname, clientAddr, clientPort);
 
-                        break;
-                    case "get_server":
-                        break;
-                    case "leave":
-                        leaveClient(ID);
-                        break;
-                    case "client_address":
-                        clientAddress();
-                        break;
-                    case "ready":
-                        ready(ID);
-                        break;
-                    case "vote_result_civilian":
+                            break;
+                        case "get_server":
+                            break;
+                        case "leave":
+                            leaveClient(ID);
+                            break;
+                        case "client_address":
+                            clientAddress();
+                            break;
+                        case "ready":
+                            ready(ID);
+                            break;
+                        case "vote_result_civilian":
 //                        int isSuccess = jsonObject.getInt("vote_status");
 //                        voteResultCivilian(isSuccess);
-                        int statusC = jsonObject.getInt("vote_status");
-                        if(statusC == 1){
-                            int playerKilled = jsonObject.getInt("player_killed");
-                            voteResultCivilian(playerKilled);
-                        } else if (statusC == -1){
-                            // No player killed
-                            voteResult();
-                        }
-                        break;
-                    case "vote_result_werewolf":
-                        int statusW = jsonObject.getInt("vote_status");
-                        if(statusW == 1){
-                            int playerKilled = jsonObject.getInt("player_killed");
-                            voteResultWerewolf(playerKilled);
-                        } else if (statusW == -1){
-                            // No player killed
-                            voteResult();
-                        }
-                        break;
-                    case "accepted_proposal":
-                        int kpuId = jsonObject.getInt("kpu_id");
-                        kpuSelected(kpuId);
-                        break;
-                    default:
-                        break;
+                            int statusC = jsonObject.getInt("vote_status");
+                            if(statusC == 1){
+                                int playerKilled = jsonObject.getInt("player_killed");
+                                voteResultCivilian(playerKilled);
+                            } else if (statusC == -1){
+                                // No player killed
+                                voteResult();
+                            }
+                            break;
+                        case "vote_result_werewolf":
+                            int statusW = jsonObject.getInt("vote_status");
+                            if(statusW == 1){
+                                int playerKilled = jsonObject.getInt("player_killed");
+                                voteResultWerewolf(playerKilled);
+                            } else if (statusW == -1){
+                                // No player killed
+                                voteResult();
+                            }
+                            break;
+                        case "accepted_proposal":
+                            kpuCounter++;
+                            int kpuId = jsonObject.getInt("kpu_id");
+                            kpuSelected(kpuId, ID);
+                            break;
+                        default:
+                            break;
+                    }
+                } else {
+                    System.out.println(jsonObject.toString());
                 }
-
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -433,6 +442,8 @@ public class ChatServer implements Runnable {
             gameOver("werewolf");
         } else if (nWerewolf == 0) {
             gameOver("civilian");
+        } else {
+            changePhase();
         }
     }
 
@@ -458,11 +469,33 @@ public class ChatServer implements Runnable {
 
     /*-------------------------- Method Change Phase ---------------------------*/
     void changePhase(){
+        JSONObject jsonObject = new JSONObject();
+        if (Time.equals("day"))
+            Time = "night";
+        else {
+            Time = "day";
+            day++;
+        }
+        try{
+            jsonObject.put("method", "change_phase");
+            jsonObject.put("time", Time);
+            jsonObject.put("days", day);
+            jsonObject.put("description", "");
 
+            String msg = String.valueOf(jsonObject);
+
+            clients[findClient(players[0].getAddrPort())].send(msg);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     /*-------------------------- Method Start Game---------------------------*/
     void startGame(){
+        for(int i=0; i<playerCount; i++){
+            voteKPU.addElement(0);
+        }
+
         try {
             Random rand = new Random();
             nWerewolf = playerCount/3;
@@ -523,7 +556,19 @@ public class ChatServer implements Runnable {
         }
     }
 
-    void kpuSelected(int id){
+    int maxID(Vector<Integer> vec){
+        int id = 0;
+        int max = vec.elementAt(id);
+        for(int i=1; i<vec.size(); i++){
+            if(vec.elementAt(i) > max){
+                id = i;
+                max = vec.elementAt(id);
+            }
+        }
+        return id;
+    }
+
+    void kpuSelected(int id, int port){
         JSONObject jsonObject = new JSONObject();
 
         try {
@@ -535,21 +580,35 @@ public class ChatServer implements Runnable {
                     clients[findClient(players[i].getAddrPort())].send(msg);
             }
 
+            while(kpuCounter < playerCount){
+                // wait
+            }
+
+            id = maxID(voteKPU);
+
             JSONObject json = new JSONObject();
             json.put("method", "kpu_selected");
             json.put("kpu_id", id);
+
             msg = String.valueOf(json);
-            for (int i = 0; i < playerCount; i++) {
-                clients[findClient(players[i].getAddrPort())].send(msg);
-            }
+//            for (int i = 0; i < playerCount; i++) {
+//                clients[findClient(players[i].getAddrPort())].send(msg);
+//            }
+            clients[findClient(port)].send(msg);
 
             JSONObject jsonObj = new JSONObject();
             jsonObj.put("method", "vote_now");
             jsonObj.put("phase", Time);
             msg = String.valueOf(jsonObj);
-            for (int i = 0; i < playerCount; i++) {
-                clients[findClient(players[i].getAddrPort())].send(msg);
-            }
+//            for (int i = 0; i < playerCount; i++) {
+//                clients[findClient(players[i].getAddrPort())].send(msg);
+//            }
+            clients[findClient(port)].send(msg);
+
+            // For next iteration ?
+//            for(int i=0; i<playerCount; i++){
+//                voteKPU.set(i, 0);
+//            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
