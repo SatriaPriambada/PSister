@@ -159,7 +159,7 @@ public class ChatClient implements Runnable
                                 System.out.println(numberPlayer);
                                 if(currentPlayer.getId() >= numberPlayer-2) {
                                     currentPlayer.setStatusPaxos("proposer");
-                                    //prepareProposal();
+                                    prepareProposal();
                                 } else {
                                     currentPlayer.setStatusPaxos("acceptor");
                                     KPUSelected(currentPlayer.getId());
@@ -182,6 +182,11 @@ public class ChatClient implements Runnable
                         json.put("status", "ok");
                         streamOut.writeUTF(json.toString());
                         streamOut.flush();
+                    } else if(jsonObject.getString("method").equals("vote_now")){
+                        JSONObject json = new JSONObject();
+                        json.put("status", "ok");
+                        streamOut.writeUTF(json.toString());
+                        streamOut.flush();
                     }
                 }
 //                System.out.println("Current player: " + currentPlayer);
@@ -191,6 +196,8 @@ public class ChatClient implements Runnable
             } /*catch (InterruptedException e) {
                 e.printStackTrace();
             }*/ catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
