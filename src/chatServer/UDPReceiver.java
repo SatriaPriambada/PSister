@@ -82,7 +82,7 @@ public class UDPReceiver extends Thread
                         acceptProposalResponse(jsonObject.getInt("kpu_id"));
                     } else if (method.equals("vote_werewolf")) {
                         voteWerewolfResponse();
-                    } else if (method.equals("vote_civillian")) {
+                    } else if (method.equals("vote_civilian")) {
                         voteCivilianResponse();
                     } else {
                         System.out.println(method + "does not exist");

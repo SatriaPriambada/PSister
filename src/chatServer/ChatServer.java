@@ -87,58 +87,58 @@ public class ChatServer implements Runnable {
             System.out.println(input);
             try {
                 JSONObject jsonObject = new JSONObject(input);
-                String method = jsonObject.getString("method");
+                if(jsonObject.has("method")){
+                    String method = jsonObject.getString("method");
 
-                switch (method){
-                    case "join":
-                        // Join Client
-                        String clientUname = jsonObject.getString("username");
-                        String clientAddr = jsonObject.getString("udp_address");
-                        int clientPort = jsonObject.getInt("udp_port");
-                        joinClient(clientUname, clientAddr, clientPort);
+                    switch (method){
+                        case "join":
+                            // Join Client
+                            String clientUname = jsonObject.getString("username");
+                            String clientAddr = jsonObject.getString("udp_address");
+                            int clientPort = jsonObject.getInt("udp_port");
+                            joinClient(clientUname, clientAddr, clientPort);
 
-                        break;
-                    case "get_server":
-                        break;
-                    case "leave":
-                        leaveClient(ID);
-                        break;
-                    case "client_address":
-                        clientAddress();
-                        break;
-                    case "ready":
-                        ready(ID);
-                        break;
-                    case "vote_result_civilian":
-//                        int isSuccess = jsonObject.getInt("vote_status");
-//                        voteResultCivilian(isSuccess);
-                        int statusC = jsonObject.getInt("vote_status");
-                        if(statusC == 1){
-                            int playerKilled = jsonObject.getInt("player_killed");
-                            voteResultCivilian(playerKilled);
-                        } else if (statusC == -1){
-                            // No player killed
-                            voteResult();
-                        }
-                        break;
-                    case "vote_result_werewolf":
-                        int statusW = jsonObject.getInt("vote_status");
-                        if(statusW == 1){
-                            int playerKilled = jsonObject.getInt("player_killed");
-                            voteResultWerewolf(playerKilled);
-                        } else if (statusW == -1){
-                            // No player killed
-                            voteResult();
-                        }
-                        break;
-                    case "accepted_proposal":
-                        int kpuId = jsonObject.getInt("kpu_id");
-                        kpuSelected(kpuId);
-                        break;
-                    default:
-                        break;
+                            break;
+                        case "get_server":
+                            break;
+                        case "leave":
+                            leaveClient(ID);
+                            break;
+                        case "client_address":
+                            clientAddress();
+                            break;
+                        case "ready":
+                            ready(ID);
+                            break;
+                        case "vote_result_civilian":
+                            int statusC = jsonObject.getInt("vote_status");
+                            if(statusC == 1){
+                                int playerKilled = jsonObject.getInt("player_killed");
+                                voteResultCivilian(playerKilled);
+                            } else if (statusC == -1){
+                                // No player killed
+                                voteResult();
+                            }
+                            break;
+                        case "vote_result_werewolf":
+                            int statusW = jsonObject.getInt("vote_status");
+                            if(statusW == 1){
+                                int playerKilled = jsonObject.getInt("player_killed");
+                                voteResultWerewolf(playerKilled);
+                            } else if (statusW == -1){
+                                // No player killed
+                                voteResult();
+                            }
+                            break;
+                        case "accepted_proposal":
+                            int kpuId = jsonObject.getInt("kpu_id");
+                            break;
+                        default:
+                            break;
+                    }
+                } else {
+                    System.out.println(jsonObject.toString());
                 }
-
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -314,7 +314,9 @@ public class ChatServer implements Runnable {
                 jsonObject.put("address", players[j].getAddrIp());
                 jsonObject.put("port", players[j].getAddrPort());
                 jsonObject.put("username", players[j].getUsername());
-
+                if(players[j].getAlive() == Player.DEAD) {
+                    jsonObject.put("role", players[j].getRolePlayer());
+                }
                 jsonArray.put(jsonObject);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -368,7 +370,7 @@ public class ChatServer implements Runnable {
                     String msg = new String(String.valueOf(jsonObject));
                     clients[findClient(players[i].getAddrPort())].send(msg);
                     System.out.println(readyCount);
-                    if (readyCount == playerCount){
+                    if ((readyCount == playerCount) && (readyCount >= 6)){
                         startGame();
                     }
                 } catch (JSONException e) {

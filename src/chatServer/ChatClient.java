@@ -32,8 +32,8 @@ public class ChatClient implements Runnable
     private int numberPlayer;
     private String Time = "day";
     private int[] listVote = new int[ChatServer.PLAYER_SIZE];
-    private int numberWerewolf = 2;
-    private int numberCivilian = 4;
+    private int numberWerewolf;
+    private int numberCivilian;
     private int tryKill = 0;
 
     public Player getCurrentPlayer(){
@@ -155,8 +155,12 @@ public class ChatClient implements Runnable
                                     players[i].setAddrPort(json.getInt("port"));
                                     players[i].setUsername(json.getString("username"));
                                 }
+
                                 numberPlayer = i;
-                                System.out.println(numberPlayer);
+                                numberWerewolf = numberPlayer / 3;
+                                numberCivilian = numberPlayer - numberWerewolf;
+
+//                                System.out.println(numberPlayer);
                                 if(currentPlayer.getId() >= numberPlayer-2) {
                                     currentPlayer.setStatusPaxos("proposer");
                                     prepareProposal();
@@ -187,6 +191,8 @@ public class ChatClient implements Runnable
                         json.put("status", "ok");
                         streamOut.writeUTF(json.toString());
                         streamOut.flush();
+                    } else if(jsonObject.getString("method").equals("game_over")){
+                        jsonObject.put("status", "ok");
                     }
                 }
 //                System.out.println("Current player: " + currentPlayer);
@@ -506,26 +512,6 @@ public class ChatClient implements Runnable
             client = new ChatClient(args[0], Integer.parseInt(args[1]));
     }
 
-   /* *//*-------------------------- Method Vote Result civilian ---------------------------*//*
-    void voteResultCivilian(){
-        JSONObject jsonObject = new JSONObject();
-        boolean voteSuccess = true;
-        try {
-            if (voteSuccess) {
-                jsonObject.put("method", "vote_result_civilian");
-                jsonObject.put("vote_status", 1);
-                jsonObject.put("player_killed", 4);
-                jsonObject.put("vote_result", "[0,1], [1,2],...");
-            } else {
-                jsonObject.put("method", "vote_result_civilian");
-                jsonObject.put("vote_status", -1);
-                jsonObject.put("vote_result", "[0,1], [1,2],...");
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-*/
     /*-------------------------- Method KPU Selected---------------------------*/
     void KPUSelected(int playerId){
         JSONObject jsonObject = new JSONObject();
