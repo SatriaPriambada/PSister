@@ -29,6 +29,8 @@ public class ChatServer implements Runnable {
     private int nCivilian = 0;
 
     private Player[] players = new Player[PLAYER_SIZE];
+
+    private String Time = "day";
 //    private int[] listIsAlive = new int[50];
 //    private String[] listIP = new String[50];
 //    private int[] listPort = new int[50];
@@ -133,6 +135,7 @@ public class ChatServer implements Runnable {
                         break;
                     case "accepted_proposal":
                         int kpuId = jsonObject.getInt("kpu_id");
+                        kpuSelected(kpuId);
                         break;
                     default:
                         break;
@@ -516,6 +519,38 @@ public class ChatServer implements Runnable {
                 i++;
             }
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    void kpuSelected(int id){
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            jsonObject.put("status", "ok");
+            jsonObject.put("description", "");
+            String msg = String.valueOf(jsonObject);
+            for (int i = 0; i < playerCount; i++) {
+                if (i != id)
+                    clients[findClient(players[i].getAddrPort())].send(msg);
+            }
+
+            JSONObject json = new JSONObject();
+            json.put("method", "kpu_selected");
+            json.put("kpu_id", id);
+            msg = String.valueOf(json);
+            for (int i = 0; i < playerCount; i++) {
+                clients[findClient(players[i].getAddrPort())].send(msg);
+            }
+
+            JSONObject jsonObj = new JSONObject();
+            jsonObj.put("method", "vote_now");
+            jsonObj.put("phase", Time);
+            msg = String.valueOf(json);
+            for (int i = 0; i < playerCount; i++) {
+                clients[findClient(players[i].getAddrPort())].send(msg);
+            }
+        } catch (JSONException e) {
             e.printStackTrace();
         }
     }
