@@ -8,6 +8,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
+import java.util.Vector;
 
 public class UDPReceiver extends Thread
 {
@@ -36,6 +37,7 @@ public class UDPReceiver extends Thread
     private int previousLeader = Player.ID_NOT_SET;
     private String Time = "day";
     private int countVote = 0;
+    private Vector<Integer> voteResult = new Vector<>();
 
     public int getCurrentLeader(){
         return currentLeader;
@@ -53,6 +55,10 @@ public class UDPReceiver extends Thread
         String localIP = socket.getLocalAddress().getHostAddress();
         currentPlayer = new Player(localIP, ID);
 		start();
+        for (int q = 0; q < client.getNumberPlayer(); q++) {
+            voteResult.set(q,0);
+        }
+
 	}
 
 	public void run()
@@ -128,12 +134,16 @@ public class UDPReceiver extends Thread
                                     accept = false;
                                 }
                             } else if (jsonObject.getString("description").equalsIgnoreCase("")) {
-                                if (Time.equals("day") && countVote == client.getNumberPlayer()){
-                                    client.voteResultCivilian();
-                                    countVote = 0;
-                                } else if (Time.equals("night") && countVote == client.getNumberPlayer()){
-                                    client.voteResultWerewolf();
-                                    countVote = 0;
+                                if (countVote == client.getNumberPlayer()){
+
+                                    if (Time.equals("day")){
+                                        client.voteResultCivilian();
+                                        countVote = 0;
+                                    } else if (Time.equals("night")){
+                                        client.voteResultWerewolf();
+                                        countVote = 0;
+                                    }
+
                                 }
                             } else {
                                 System.out.println(jsonObject);

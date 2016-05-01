@@ -194,6 +194,7 @@ public class ChatClient implements Runnable
                         streamOut.writeUTF(json.toString());
                         streamOut.flush();
                         Time = jsonObject.getString("phase");
+                        VoteNow(currentLeader);
                     }
                 }
 //                System.out.println("Current player: " + currentPlayer);
@@ -379,8 +380,42 @@ public class ChatClient implements Runnable
     public void voteCivilian(){
         if(this.currentPlayer.getRolePlayer().equals("werewolf")){
             System.out.println("I am werewolf");
+            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+            Scanner scanner = new Scanner(System.in);
+            String kill = scanner.next();
+            int index = Integer.valueOf(kill);
+            listVote[index] = listVote[index]++;
+            transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
+            JSONObject jsonObject = new JSONObject();
+
+            try {
+                jsonObject.put("method", "vote_civilian");
+                jsonObject.put("player_id", index);
+                transmitterUDP.send(jsonObject.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         } else if (this.currentPlayer.getRolePlayer().equals("civilian")) {
             System.out.println("I am civilian");
+            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+            Scanner scanner = new Scanner(System.in);
+            String kill = scanner.next();
+            int index = Integer.valueOf(kill);
+            listVote[index] = listVote[index]++;
+            transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
+            JSONObject jsonObject = new JSONObject();
+
+            try {
+                jsonObject.put("method", "vote_civilian");
+                jsonObject.put("player_id", index);
+                transmitterUDP.send(jsonObject.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         } else if (this.currentPlayer.getStatusPaxos().equals("dead")) {
             System.out.println("I am dead waiting for the day");
         }
@@ -477,26 +512,6 @@ public class ChatClient implements Runnable
             client = new ChatClient(args[0], Integer.parseInt(args[1]));
     }
 
-   /* *//*-------------------------- Method Vote Result civilian ---------------------------*//*
-    void voteResultCivilian(){
-        JSONObject jsonObject = new JSONObject();
-        boolean voteSuccess = true;
-        try {
-            if (voteSuccess) {
-                jsonObject.put("method", "vote_result_civilian");
-                jsonObject.put("vote_status", 1);
-                jsonObject.put("player_killed", 4);
-                jsonObject.put("vote_result", "[0,1], [1,2],...");
-            } else {
-                jsonObject.put("method", "vote_result_civilian");
-                jsonObject.put("vote_status", -1);
-                jsonObject.put("vote_result", "[0,1], [1,2],...");
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-*/
     /*-------------------------- Method KPU Selected---------------------------*/
     void KPUSelected(int playerId){
         JSONObject jsonObject = new JSONObject();
