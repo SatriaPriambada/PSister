@@ -35,6 +35,7 @@ public class ChatServer implements Runnable {
 
     private int kpuCounter = 0;
     private String Time = "day";
+    private int day = 1;
 //    private int[] listIsAlive = new int[50];
 //    private String[] listIP = new String[50];
 //    private int[] listPort = new int[50];
@@ -441,6 +442,8 @@ public class ChatServer implements Runnable {
             gameOver("werewolf");
         } else if (nWerewolf == 0) {
             gameOver("civilian");
+        } else {
+            changePhase();
         }
     }
 
@@ -466,7 +469,25 @@ public class ChatServer implements Runnable {
 
     /*-------------------------- Method Change Phase ---------------------------*/
     void changePhase(){
+        JSONObject jsonObject = new JSONObject();
+        if (Time.equals("day"))
+            Time = "night";
+        else {
+            Time = "day";
+            day++;
+        }
+        try{
+            jsonObject.put("method", "change_phase");
+            jsonObject.put("time", Time);
+            jsonObject.put("days", day);
+            jsonObject.put("description", "");
 
+            String msg = String.valueOf(jsonObject);
+
+            clients[findClient(players[0].getAddrPort())].send(msg);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     /*-------------------------- Method Start Game---------------------------*/
