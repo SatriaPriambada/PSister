@@ -1,7 +1,7 @@
 package chatServer;
 
 /**
- * Created by Satria on 4/28/2016.
+ * Created by Satria on 4/28/2016 with name ${PACKAGE_NAME}
  */
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,6 +36,7 @@ public class ChatServer implements Runnable {
     private int kpuCounter = 0;
     private String Time = "day";
     private int day = 1;
+    private int currentLeader;
 //    private int[] listIsAlive = new int[50];
 //    private String[] listIP = new String[50];
 //    private int[] listPort = new int[50];
@@ -142,6 +143,7 @@ public class ChatServer implements Runnable {
                         case "accepted_proposal":
                             kpuCounter++;
                             int kpuId = jsonObject.getInt("kpu_id");
+                            currentLeader = jsonObject.getInt("kpu_id");
                             kpuSelected(kpuId, ID);
                             break;
                         default:
@@ -411,7 +413,7 @@ public class ChatServer implements Runnable {
 
             String msg = String.valueOf(jsonObject);
             // Kirim ke KPU
-            clients[findClient(players[0].getAddrPort())].send(msg);
+            clients[findClient(players[currentLeader].getAddrPort())].send(msg);
         } catch (JSONException e){
             e.printStackTrace();
         }
@@ -429,7 +431,7 @@ public class ChatServer implements Runnable {
 
             String msg = String.valueOf(jsonObject);
             // Kirim ke KPU
-            clients[findClient(players[0].getAddrPort())].send(msg);
+            clients[findClient(players[currentLeader].getAddrPort())].send(msg);
         } catch (JSONException e){
             e.printStackTrace();
         }
@@ -461,7 +463,7 @@ public class ChatServer implements Runnable {
 
             String msg = String.valueOf(jsonObject);
             // Kirim ke KPU
-            clients[findClient(players[0].getAddrPort())].send(msg);
+            clients[findClient(players[currentLeader].getAddrPort())].send(msg);
         } catch (JSONException e){
             e.printStackTrace();
         }
@@ -489,7 +491,7 @@ public class ChatServer implements Runnable {
 
             String msg = String.valueOf(jsonObject);
 
-            clients[findClient(players[0].getAddrPort())].send(msg);
+            clients[findClient(players[currentLeader].getAddrPort())].send(msg);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -580,6 +582,7 @@ public class ChatServer implements Runnable {
             jsonObject.put("status", "ok");
             jsonObject.put("description", "");
             String msg = String.valueOf(jsonObject);
+            //send response to all but leader
             for (int i = 0; i < playerCount; i++) {
                 if (i != id)
                     clients[findClient(players[i].getAddrPort())].send(msg);
@@ -588,8 +591,8 @@ public class ChatServer implements Runnable {
 //            while(kpuCounter < (playerCount - 1)){
 //                // wait
 //            }
-
-            id = maxID(voteKPU);
+//
+//            id = maxID(voteKPU);
 
             JSONObject json = new JSONObject();
             json.put("method", "kpu_selected");

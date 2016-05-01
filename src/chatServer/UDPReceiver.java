@@ -133,18 +133,6 @@ public class UDPReceiver extends Thread
                                 } else {
                                     accept = false;
                                 }
-                            } else if (jsonObject.getString("description").equalsIgnoreCase("")) {
-                                if (countVote == client.getNumberPlayer()){
-
-                                    if (Time.equals("day")){
-                                        client.voteResultCivilian();
-                                        countVote = 0;
-                                    } else if (Time.equals("night")){
-                                        client.voteResultWerewolf();
-                                        countVote = 0;
-                                    }
-
-                                }
                             } else {
                                 System.out.println(jsonObject);
                             }
@@ -201,6 +189,7 @@ public class UDPReceiver extends Thread
     /*-------------------------- Method Accept Proposal Paxos---------------------------*/
     void acceptProposalResponse(int candidateLeader) throws JSONException, InterruptedException {
         JSONObject jsonObject = new JSONObject();
+        accept = false;
         if(!accept) {
             jsonObject.put("status", "ok");
             jsonObject.put("description", "accepted");
@@ -226,7 +215,7 @@ public class UDPReceiver extends Thread
         }
 
 
-        //wait for signal
+        //wait for signal assumtion status ok will always be sent to leader
         //System.out.println("My ID "+currentPlayer.getId() + "candidate " + candidateLeader);
         if(currentPlayer.getId() != candidateLeader) {
             System.out.println("ALL FINISHED");
@@ -287,11 +276,20 @@ public class UDPReceiver extends Thread
                     jsonObject.put("description", "");
                 }
 
-                System.out.println("Masuk UDP Transmitter");
                 udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
                 udpTransmitter.reply(jsonObject.toString());
+                System.out.println("vote count = " + countVote);
 
-                System.out.println("Selesai UDP Transmitter");
+                if (countVote == client.getNumberPlayer()) {
+                    if (Time.equals("day")) {
+                        client.voteResultCivilian();
+                        countVote = 0;
+                    } else if (Time.equals("night")) {
+                        client.voteResultWerewolf();
+                        countVote = 0;
+                    }
+                }
+
             } catch (JSONException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
