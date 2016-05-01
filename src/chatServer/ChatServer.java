@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
+import java.util.Vector;
 
 public class ChatServer implements Runnable {
     private ChatServerThread clients[] = new ChatServerThread[50];
@@ -27,6 +28,8 @@ public class ChatServer implements Runnable {
 
     private int nWerewolf = 0;
     private int nCivilian = 0;
+
+    private Vector<Integer> voteKPU = new Vector<>();
 
     private Player[] players = new Player[PLAYER_SIZE];
 
@@ -135,7 +138,7 @@ public class ChatServer implements Runnable {
                         break;
                     case "accepted_proposal":
                         int kpuId = jsonObject.getInt("kpu_id");
-                        kpuSelected(kpuId);
+                        kpuSelected(kpuId, ID);
                         break;
                     default:
                         break;
@@ -463,6 +466,10 @@ public class ChatServer implements Runnable {
 
     /*-------------------------- Method Start Game---------------------------*/
     void startGame(){
+        for(int i=0; i<playerCount; i++){
+            voteKPU.addElement(0);
+        }
+
         try {
             Random rand = new Random();
             nWerewolf = playerCount/3;
@@ -523,7 +530,7 @@ public class ChatServer implements Runnable {
         }
     }
 
-    void kpuSelected(int id){
+    void kpuSelected(int id, int port){
         JSONObject jsonObject = new JSONObject();
 
         try {
@@ -539,17 +546,19 @@ public class ChatServer implements Runnable {
             json.put("method", "kpu_selected");
             json.put("kpu_id", id);
             msg = String.valueOf(json);
-            for (int i = 0; i < playerCount; i++) {
-                clients[findClient(players[i].getAddrPort())].send(msg);
-            }
+//            for (int i = 0; i < playerCount; i++) {
+//                clients[findClient(players[i].getAddrPort())].send(msg);
+//            }
+            clients[findClient(port)].send(msg);
 
             JSONObject jsonObj = new JSONObject();
             jsonObj.put("method", "vote_now");
             jsonObj.put("phase", Time);
             msg = String.valueOf(jsonObj);
-            for (int i = 0; i < playerCount; i++) {
-                clients[findClient(players[i].getAddrPort())].send(msg);
-            }
+//            for (int i = 0; i < playerCount; i++) {
+//                clients[findClient(players[i].getAddrPort())].send(msg);
+//            }
+            clients[findClient(port)].send(msg);
         } catch (JSONException e) {
             e.printStackTrace();
         }
