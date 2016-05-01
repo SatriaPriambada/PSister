@@ -154,9 +154,10 @@ public class ChatClient implements Runnable
                                 System.out.println(numberPlayer);
                                 if(currentPlayer.getId() >= numberPlayer-2) {
                                     currentPlayer.setStatusPaxos("proposer");
-                                    prepareProposal();
+                                    //prepareProposal();
                                 } else {
                                     currentPlayer.setStatusPaxos("acceptor");
+                                    KPUSelected(currentPlayer.getId());
                                 }
                                 break;
                             default:
@@ -171,13 +172,20 @@ public class ChatClient implements Runnable
                     if(jsonObject.getString("method").equals("start")){
                         currentPlayer.setRolePlayer(jsonObject.getString("role"));
                         Time = jsonObject.getString("time");
+                    } else if(jsonObject.getString("method").equals("kpu_selected")){
+                        JSONObject json = new JSONObject();
+                        json.put("status", "ok");
+                        streamOut.writeUTF(json.toString());
+                        streamOut.flush();
                     }
                 }
 //                System.out.println("Current player: " + currentPlayer);
 
             } catch (JSONException e) {
                 e.printStackTrace();
-            } catch (InterruptedException e) {
+            } /*catch (InterruptedException e) {
+                e.printStackTrace();
+            }*/ catch (IOException e) {
                 e.printStackTrace();
             }
         }
@@ -474,14 +482,24 @@ public class ChatClient implements Runnable
 */
     /*-------------------------- Method KPU Selected---------------------------*/
     void KPUSelected(int playerId){
-//        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
-//            System.out.println("I am proposer");
-//        } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
-//            System.out.println("I am acceptor");
-//        } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
-//            System.out.println("I am KPU leader");
-//        }
+        JSONObject jsonObject = new JSONObject();
 
+        if (this.currentPlayer.getStatusPaxos().equals("leader")) {
+            System.out.println("I am KPU leader");
+        } else {
+            try {
+                jsonObject.put("method", "accepted_proposal");
+                jsonObject.put("kpu_id", playerId);
+                jsonObject.put("description", "Kpu is selected");
+                System.out.println(jsonObject.toString());
+                streamOut.writeUTF(jsonObject.toString());
+                streamOut.flush();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 }
