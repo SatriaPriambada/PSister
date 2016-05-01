@@ -120,6 +120,7 @@ public class UDPReceiver extends Thread
                                             System.out.println("Set client " + i + " to " + finishElection);
                                             System.out.println(players[i]);
                                         }
+                                        client.KPUSelected(currentLeader);
                                     }
                                 } else {
                                     accept = false;
@@ -217,6 +218,7 @@ public class UDPReceiver extends Thread
         //System.out.println("My ID "+currentPlayer.getId() + "candidate " + candidateLeader);
         if(currentPlayer.getId() != candidateLeader) {
             System.out.println("ALL FINISHED");
+            client.KPUSelected(candidateLeader);
         }
 
     }

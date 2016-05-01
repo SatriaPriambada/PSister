@@ -367,8 +367,42 @@ public class ChatClient implements Runnable
     public void voteCivilian(){
         if(this.currentPlayer.getRolePlayer().equals("werewolf")){
             System.out.println("I am werewolf");
+            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+            Scanner scanner = new Scanner(System.in);
+            String kill = scanner.next();
+            int index = Integer.valueOf(kill);
+            listVote[index] = listVote[index]++;
+            transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
+            JSONObject jsonObject = new JSONObject();
+
+            try {
+                jsonObject.put("method", "vote_civilian");
+                jsonObject.put("player_id", index);
+                transmitterUDP.send(jsonObject.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         } else if (this.currentPlayer.getRolePlayer().equals("civilian")) {
             System.out.println("I am civilian");
+            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+            Scanner scanner = new Scanner(System.in);
+            String kill = scanner.next();
+            int index = Integer.valueOf(kill);
+            listVote[index] = listVote[index]++;
+            transmitterUDP = new UDPTransmitter(this, players[currentLeader].getAddrIp(), players[currentLeader].getAddrPort(), socket.getLocalPort());
+            JSONObject jsonObject = new JSONObject();
+
+            try {
+                jsonObject.put("method", "vote_civilian");
+                jsonObject.put("player_id", index);
+                transmitterUDP.send(jsonObject.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         } else if (this.currentPlayer.getStatusPaxos().equals("dead")) {
             System.out.println("I am dead waiting for the day");
         }
