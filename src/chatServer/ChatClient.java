@@ -40,6 +40,11 @@ public class ChatClient implements Runnable
         return currentPlayer;
     }
 
+    public void setPlayers(Player[] _players){
+        players = _players;
+        currentPlayer = players[currentPlayer.getId()];
+    }
+
     public Player[] getPlayers(){
         return players;
     }

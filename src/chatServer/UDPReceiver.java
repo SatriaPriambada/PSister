@@ -31,7 +31,7 @@ public class UDPReceiver extends Thread
     private UDPTransmitter udpTransmitter;
     private boolean accept = false;
     private boolean acceptLeader = false;
-private static boolean finishElection = false;
+    private boolean finishElection = false;
     private int currentLeader = Player.ID_NOT_SET;
     private int previousLeader = Player.ID_NOT_SET;
     private String Time = "day";
@@ -78,12 +78,14 @@ private static boolean finishElection = false;
                     String method = jsonObject.getString("method");
                     if (method.equals("prepare_proposal")) {
                         prepareProposalResponse();
+                    } else if (method.equals("accept_proposal")) {
+                        acceptProposalResponse(jsonObject.getInt("kpu_id"));
                     } else if (method.equals("vote_werewolf")) {
                         voteWerewolfResponse();
                     } else if (method.equals("vote_civillian")) {
                         voteCivilianResponse();
                     } else {
-                        System.out.println(method);
+                        System.out.println(method + "does not exist");
                     }
                 } else if (jsonObject.has("status")){
                     //handle object with status this is response from other client
@@ -98,6 +100,7 @@ private static boolean finishElection = false;
                                     if(!acceptLeader) {
                                         System.out.println("candidate : " + leaderCandidate);
                                         accept = false;
+                                        counter = 0;
                                         client.acceptProposal(leaderCandidate);
                                         acceptLeader = true;
                                     } else {
@@ -111,6 +114,12 @@ private static boolean finishElection = false;
                                             currentLeader = leaderCandidate;
                                         }
                                         finishElection = true;
+
+                                        for(int i = 0; i < client.getNumberPlayer(); i++) {
+                                            players[i].setFinish(finishElection);
+                                            System.out.println("Set client " + i + " to " + finishElection);
+                                            System.out.println(players[i]);
+                                        }
                                     }
                                 } else {
                                     accept = false;
@@ -133,11 +142,6 @@ private static boolean finishElection = false;
                         System.out.println(jsonObject);
                     }
 
-                }
-
-                if(finishElection) {
-                    System.out.println("Finish leader election");
-                    client.VoteNow(currentLeader);
                 }
             }
 
@@ -188,13 +192,13 @@ private static boolean finishElection = false;
             jsonObject.put("status", "ok");
             jsonObject.put("description", "accepted");
             if (currentPlayer.getStatusPaxos().equals("proposer")) {
-                System.out.println("I am accept proposer");
+//                System.out.println("I am accept proposer");
 
                 udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
                 udpTransmitter.reply(jsonObject.toString());
 
             } else if (currentPlayer.getStatusPaxos().equals("acceptor")) {
-                System.out.println("I am accept acceptor");
+//                System.out.println("I am accept acceptor");
 
                 udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
                 udpTransmitter.reply(jsonObject.toString());
@@ -207,6 +211,14 @@ private static boolean finishElection = false;
             udpTransmitter = new UDPTransmitter(client, IPReturn, portReturn, ID);
             udpTransmitter.reply(jsonObject.toString());
         }
+
+
+        //wait for signal
+        //System.out.println("My ID "+currentPlayer.getId() + "candidate " + candidateLeader);
+        if(currentPlayer.getId() != candidateLeader) {
+            System.out.println("ALL FINISHED");
+        }
+
     }
 
     /*-------------------------- Method Vote Werewolf Paxos---------------------------*/

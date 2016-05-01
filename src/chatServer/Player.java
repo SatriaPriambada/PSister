@@ -15,6 +15,7 @@ public class Player {
     private int alive;
     private String statusPaxos;
     private String rolePlayer;
+    private boolean isFinish;
     private boolean isReady;
 
     public boolean isReady() {
@@ -34,6 +35,7 @@ public class Player {
         this.id = ID_NOT_SET;
         this.username = "";
         alive = ALIVE;
+        isFinish = false;
     }
 
     public int getAlive() {
@@ -97,7 +99,12 @@ public class Player {
                 " is_alive " + alive +
                 " address " + addrIp +
                 " port " + addrPort +
-                " username " + username
+                " username " + username +
+                " isFinish " + isFinish
         );
     }
+
+    public void setFinish(boolean fin) { isFinish = fin; }
+
+    public boolean getFinish(){ return isFinish; }
 }
