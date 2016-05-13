@@ -247,6 +247,7 @@ public class ChatClient implements Runnable
                         json.put("status", "ok");
                         streamOut.writeUTF(json.toString());
                         streamOut.flush();
+                        System.out.println("I have seen the leader is " + jsonObject.getInt("kpu_id"));
                         if (currentLeader == Player.ID_NOT_SET){
                             System.out.println("selected leader " + jsonObject.getInt("kpu_id"));
                             currentLeader = jsonObject.getInt("kpu_id");
@@ -254,6 +255,7 @@ public class ChatClient implements Runnable
                             previousLeader = currentLeader;
                             currentLeader = jsonObject.getInt("kpu_id");
                         }
+                        UDPReceiver.finishElection = true;
                     } else if (jsonObject.getString("method").equals("vote_now")){
                         JSONObject json = new JSONObject();
                         json.put("status", "ok");
@@ -309,8 +311,15 @@ public class ChatClient implements Runnable
 
     /*-------------------------- Method Prepare Proposal Paxos---------------------------*/
     public void prepareProposal() throws JSONException, InterruptedException {
+        if (UDPReceiver.finishElection){
+            System.out.println("Election finished");
+            this.currentPlayer.getStatusPaxos().equals("acceptor");
 
-        if(this.currentPlayer.getStatusPaxos().equals("proposer")){
+        } else {
+            System.out.println("Election not finished");
+        }
+
+        if(this.currentPlayer.getStatusPaxos().equals("proposer")  ){
             System.out.println("I am proposer");
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("method","prepare_proposal");
@@ -318,6 +327,7 @@ public class ChatClient implements Runnable
             if (previousLeader != Player.ID_NOT_SET){
                 jsonObject.put("previous_accepted", previousLeader);
             }
+
             for (int i = 0; i < numberPlayer; i++ ){
                 System.out.println("loop :" + players[i].getAddrIp() + " : "+ players[i].getAddrPort());
                 transmitterUDP = new UDPTransmitter(this, players[i].getAddrIp(), players[i].getAddrPort(), socket.getLocalPort());
@@ -327,6 +337,8 @@ public class ChatClient implements Runnable
             //Wait for timeout
             WaitingThread wt = new WaitingThread(clientUDP, this);
             wt.run();
+
+
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
         } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
@@ -574,6 +586,7 @@ public class ChatClient implements Runnable
             System.out.println("It is day invoke method vote_civilian");
         } else if (Time.equals("night")){
             System.out.println("It is night invoke method vote_werewolf");
+            UDPReceiver.finishElection = false;
         }
     }
 

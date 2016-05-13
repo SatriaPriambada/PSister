@@ -37,6 +37,7 @@ public class ChatServer implements Runnable {
     private String Time = "day";
     private int day = 1;
     private int currentLeader;
+    private boolean once = true;
 //    private int[] listIsAlive = new int[50];
 //    private String[] listIP = new String[50];
 //    private int[] listPort = new int[50];
@@ -442,6 +443,7 @@ public class ChatServer implements Runnable {
     }
 
     void killPlayer(int id){
+        once = true;
         players[id].setAlive(Player.DEAD);
         if(players[id].getRolePlayer().equals("werewolf")){
             nWerewolf--;
@@ -589,22 +591,23 @@ public class ChatServer implements Runnable {
             String msg = String.valueOf(jsonObject);
             //send response to all but leader
             for (int i = 0; i < playerCount; i++) {
-                if (i != id)
+                //if (i != id)
                     clients[findClient(players[i].getAddrPort())].send(msg);
             }
-
-//            while(kpuCounter < (playerCount - 1)){
-//                // wait
-//            }
-//
-//            id = maxID(voteKPU);
 
             JSONObject json = new JSONObject();
             json.put("method", "kpu_selected");
             json.put("kpu_id", id);
 
             msg = String.valueOf(json);
-            clients[findClient(port)].send(msg);
+            if(once) {
+
+                for (int i = 0; i < playerCount; i++) {
+                    System.out.println("here " + i + msg);
+                    clients[findClient(players[i].getAddrPort())].send(msg);
+                }
+                once = false;
+            }
 
             JSONObject jsonObj = new JSONObject();
             jsonObj.put("method", "vote_now");

@@ -32,8 +32,9 @@ public class UDPReceiver extends Thread
     private int portReturn;
     private UDPTransmitter udpTransmitter;
     private boolean accept = false;
+    private boolean acceptProposal = false;
     private boolean acceptLeader = false;
-    private boolean finishElection = false;
+    public static boolean finishElection;
     private int currentLeader = Player.ID_NOT_SET;
     private int previousLeader = Player.ID_NOT_SET;
     private String Time = "day";
@@ -60,6 +61,7 @@ public class UDPReceiver extends Thread
             voteResult.set(q,0);
             listVote[q] = 0;
         }
+        finishElection = false;
 
 	}
 
@@ -109,7 +111,6 @@ public class UDPReceiver extends Thread
                                     if(!acceptLeader) {
                                         System.out.println("candidate : " + leaderCandidate);
                                         accept = false;
-                                        counter = 0;
                                         client.acceptProposal(leaderCandidate);
                                         acceptLeader = true;
                                     } else {
@@ -124,7 +125,7 @@ public class UDPReceiver extends Thread
                                         }
                                         finishElection = true;
 
-                                        for(int i = 0; i < client.getNumberCivilian(); i++) {
+                                        for(int i = 0; i < client.getNumberPlayer(); i++) {
                                             players[i].setFinish(finishElection);
                                             System.out.println("Set client " + i + " to " + finishElection);
                                             System.out.println(players[i]);
@@ -134,8 +135,7 @@ public class UDPReceiver extends Thread
                                         client.KPUSelected(currentLeader);
                                     }
                                 } else {
-                                    accept = false;
-                                    client.prepareProposal();
+                                    acceptProposal = false;
                                 }
                             } else {
                                 System.out.println(jsonObject);
@@ -193,8 +193,7 @@ public class UDPReceiver extends Thread
     /*-------------------------- Method Accept Proposal Paxos---------------------------*/
     void acceptProposalResponse(int candidateLeader) throws JSONException, InterruptedException {
         JSONObject jsonObject = new JSONObject();
-        accept = false;
-        if(!accept) {
+        if(!acceptProposal) {
             jsonObject.put("status", "ok");
             jsonObject.put("description", "accepted");
             if (currentPlayer.getStatusPaxos().equals("proposer")) {
