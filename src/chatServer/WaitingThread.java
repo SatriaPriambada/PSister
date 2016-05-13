@@ -18,14 +18,14 @@ public class WaitingThread extends Thread {
     }
     public void run(){
         duration = System.currentTimeMillis() - milis;
-        System.out.println("Waiting timeout " + udpReceiver.counter + " current player " + client.getCurrentlyPlaying() + " milis " + duration);
+        //System.out.println("Waiting timeout " + udpReceiver.counter + " current player " + client.getCurrentlyPlaying() + " milis " + duration);
 
         while (udpReceiver.counter < client.getCurrentlyPlaying() && duration < 10000) {
             duration = System.currentTimeMillis() - milis;
         }
 
 
-        System.out.println("Timeout finished " + udpReceiver.counter + " current player " + client.getCurrentlyPlaying() + " milis " + duration);
+        //System.out.println("Timeout finished " + udpReceiver.counter + " current player " + client.getCurrentlyPlaying() + " milis " + duration);
         try {
             if ( udpReceiver.counter <= client.getCurrentlyPlaying()/2){
                 client.prepareProposal();

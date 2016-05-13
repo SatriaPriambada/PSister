@@ -319,7 +319,7 @@ public class ChatClient implements Runnable
             System.out.println("Election not finished");
         }
 
-        if(this.currentPlayer.getStatusPaxos().equals("proposer")  ){
+        if(this.currentPlayer.getStatusPaxos().equals("proposer") && !UDPReceiver.finishElection ){
             System.out.println("I am proposer");
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("method","prepare_proposal");
@@ -335,8 +335,8 @@ public class ChatClient implements Runnable
             }
 
             //Wait for timeout
-            WaitingThread wt = new WaitingThread(clientUDP, this);
-            wt.run();
+            Thread wt = new Thread(new WaitingThread(clientUDP, this));
+            wt.start();
 
 
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
