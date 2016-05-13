@@ -23,7 +23,7 @@ public class UDPReceiver extends Thread
 	private int              ID        = -1;
 	private DataInputStream streamIn  =  null;
 	private DataOutputStream streamOut = null;
-    private int counter = 0;
+    public static int counter = 0;
     private int[] listVote = new int[ChatServer.PLAYER_SIZE];
 
     private Player currentPlayer;
@@ -74,6 +74,7 @@ public class UDPReceiver extends Thread
                 ListenSocket.receive(receivePacket);
                 currentPlayer = client.getCurrentPlayer();
                 players = client.getPlayers();
+                Time = client.getTime();
 
                 String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 System.out.println("RECEIVED from client: " + receivePacket.getSocketAddress() + sentence);
@@ -100,9 +101,9 @@ public class UDPReceiver extends Thread
                     if(jsonObject.getString("status").equalsIgnoreCase("ok")){
                         if(jsonObject.has("description")){
                             if(jsonObject.getString("description").equalsIgnoreCase("accepted")){
-                                //count how many accepted if majority proceed with accept proposal
                                 counter++;
-                                if (counter > client.getNumberPlayer() / 2){
+                                //check for majority
+                                if (counter > client.getCurrentlyPlaying() / 2){
                                     int leaderCandidate = currentPlayer.getId();
                                     //when there is no accepted leader start the accept protocol
                                     if(!acceptLeader) {
@@ -123,7 +124,7 @@ public class UDPReceiver extends Thread
                                         }
                                         finishElection = true;
 
-                                        for(int i = 0; i < client.getNumberPlayer(); i++) {
+                                        for(int i = 0; i < client.getNumberCivilian(); i++) {
                                             players[i].setFinish(finishElection);
                                             System.out.println("Set client " + i + " to " + finishElection);
                                             System.out.println(players[i]);
@@ -134,6 +135,7 @@ public class UDPReceiver extends Thread
                                     }
                                 } else {
                                     accept = false;
+                                    client.prepareProposal();
                                 }
                             } else {
                                 System.out.println(jsonObject);
@@ -259,15 +261,22 @@ public class UDPReceiver extends Thread
                     System.out.print(listVote[i] + " ");
                 }
 
-                if (countVote == client.getNumberPlayer()) {
+                if (countVote == (client.getNumberWerewolf() ) )  {
                     if (Time.equals("day")) {
+
+                        client.voteResultCivilian(listVote);
                         for (int i = 0; i < client.getNumberPlayer(); i++) {
                             System.out.print(listVote[i] + " ");
+                            listVote[i] = 0;
                         }
-                        client.voteResultCivilian(listVote);
                         countVote = 0;
                     } else if (Time.equals("night")) {
+
                         client.voteResultWerewolf(listVote);
+                        for (int i = 0; i < client.getNumberPlayer(); i++) {
+                            System.out.print(listVote[i] + " ");
+                            listVote[i] = 0;
+                        }
                         countVote = 0;
                     }
                 }
@@ -311,15 +320,22 @@ public class UDPReceiver extends Thread
                 udpTransmitter.reply(jsonObject.toString());
                 System.out.println("vote count = " + countVote);
 
-                if (countVote == client.getNumberPlayer()) {
+                if (countVote == (client.getCurrentlyPlaying()) ) {
                     if (Time.equals("day")) {
+
+                        client.voteResultCivilian(listVote);
                         for (int i = 0; i < client.getNumberPlayer(); i++) {
                             System.out.print(listVote[i] + " ");
+                            listVote[i] = 0;
                         }
-                        client.voteResultCivilian(listVote);
                         countVote = 0;
                     } else if (Time.equals("night")) {
+
                         client.voteResultWerewolf(listVote);
+                        for (int i = 0; i < client.getNumberPlayer(); i++) {
+                            System.out.print(listVote[i] + " ");
+                            listVote[i] = 0;
+                        }
                         countVote = 0;
                     }
                 }

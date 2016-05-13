@@ -327,6 +327,9 @@ public class ChatServer implements Runnable {
             try {
                 jsonObject.put("player_id", j);
                 jsonObject.put("is_alive", players[j].getAlive());
+                if(players[j].getAlive() == 0){
+                    jsonObject.put("role", players[j].getRolePlayer());
+                }
                 jsonObject.put("address", players[j].getAddrIp());
                 jsonObject.put("port", players[j].getAddrPort());
                 jsonObject.put("username", players[j].getUsername());

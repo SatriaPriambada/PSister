@@ -31,9 +31,11 @@ public class ChatClient implements Runnable
     private int previousLeader = Player.ID_NOT_SET;
     private int numberPlayer;
     private String Time = "day";
-    private int numberWerewolf = 2;
-    private int numberCivilian = 4;
+    private int numberWerewolf = numberPlayer/3;
+    private int numberCivilian = numberPlayer * 2/3;
     private int tryKill = 0;
+    private int currentlyPlaying;
+    private boolean once = true;
 
     public Player getCurrentPlayer(){
         return currentPlayer;
@@ -51,6 +53,16 @@ public class ChatClient implements Runnable
     public int getNumberPlayer(){
         return numberPlayer;
     }
+
+    public int getNumberWerewolf(){
+        return numberWerewolf;
+    }
+
+    public int getNumberCivilian() { return numberCivilian; }
+
+    public int getCurrentlyPlaying() { return currentlyPlaying; }
+
+    public String getTime() { return Time; }
 
     public int getProposalID(){
         return proposalID;
@@ -109,7 +121,7 @@ public class ChatClient implements Runnable
                         jsonObject.put("method", "client_address");
                         break;
                     case "vote_civilian":
-                        if (Time.equals("day")){
+                        if (Time.equals("day") && (!currentPlayer.getRolePlayer().equals("dead"))){
                             scanner = new Scanner(System.in);
                             System.out.print("Pilih ID pemain yang akan dibunuh: ");
                             int index = scanner.nextInt();
@@ -119,17 +131,26 @@ public class ChatClient implements Runnable
                         }
                         break;
                     case "vote_werewolf":
-                        if (Time.equals("night")) {
+                        if (Time.equals("night") && currentPlayer.getRolePlayer().equals("werewolf")) {
                             scanner = new Scanner(System.in);
-                            System.out.print("Pilih ID pemain yang akan dibunuh: ");
+                            System.out.print("Pilih ID pemain non werewolf yang akan dibunuh: ");
                             int index = scanner.nextInt();
                             voteWerewolf(index);
                         } else {
-                            System.out.println("Hari sedang siang, gunakan vote_civilian");
+                            System.out.println("Hari sedang siang, gunakan vote_civilian atau anda bukan werewolf");
                         }
                         break;
                     case "change_phase":
-                        Time = jsonObject.getString("time");
+                        System.out.println("waktu saat ini : " + Time);
+                        break;
+                    case "status":
+                        System.out.println("Status Paxos saat ini : " + currentPlayer.getStatusPaxos());
+                        System.out.println("Status Role saat ini : " + currentPlayer.getRolePlayer());
+                        System.out.println("Status Pemimpin saat ini : " + currentLeader);
+                        System.out.println("Currently playing is " + currentlyPlaying);
+                        System.out.println("Number of werewolf " + numberWerewolf);
+                        System.out.println("Number of civilian " + numberCivilian);
+                        System.out.println("Try kill " + tryKill);
                         break;
                     default:
                         jsonObject.put("status","error");
@@ -172,11 +193,32 @@ public class ChatClient implements Runnable
                                     JSONObject json = jsonArray.getJSONObject(i);
                                     players[i].setId(json.getInt("player_id"));
                                     players[i].setAlive(json.getInt("is_alive"));
+                                    //if there is player dead check is it werewolf or civilian
+                                    if(  players[i].getAlive() == 0) {
+                                        currentlyPlaying--;
+                                        //set the dead player into dead
+                                        if ( currentPlayer.getId() == players[i].getId()  ) {
+                                            currentPlayer.setRolePlayer("dead");
+                                        }
+                                        if (json.getString("role").equals("werewolf")){
+                                            numberWerewolf--;
+                                        } else {
+                                            numberCivilian--;
+                                        }
+                                        currentlyPlaying = numberWerewolf + numberCivilian;
+                                    }
                                     players[i].setAddrIp(json.getString("address"));
                                     players[i].setAddrPort(json.getInt("port"));
                                     players[i].setUsername(json.getString("username"));
                                 }
                                 numberPlayer = i;
+                                if (once){
+                                    currentlyPlaying = numberPlayer;
+                                    numberWerewolf = numberPlayer/3;
+                                    numberCivilian = numberPlayer * 2 /3;
+                                    once = false;
+                                }
+
 
                                 if(currentPlayer.getId() >= numberPlayer-2) {
                                     currentPlayer.setStatusPaxos("proposer");
@@ -186,6 +228,7 @@ public class ChatClient implements Runnable
                                 } else {
                                     currentPlayer.setStatusPaxos("acceptor");
                                 }
+
                                 break;
                             default:
                                 break;
@@ -218,6 +261,9 @@ public class ChatClient implements Runnable
                         streamOut.flush();
                         Time = jsonObject.getString("phase");
                         VoteNow(currentLeader);
+                    } else if ( jsonObject.getString("method").equals("change_phase")) {
+                        Time = jsonObject.getString("time");
+                        System.out.println("waktu saat ini : " + Time);
                     }
                 }
                 System.out.println("Current player: " + currentPlayer);
@@ -277,6 +323,10 @@ public class ChatClient implements Runnable
                 transmitterUDP = new UDPTransmitter(this, players[i].getAddrIp(), players[i].getAddrPort(), socket.getLocalPort());
                 transmitterUDP.send(jsonObject.toString());
             }
+
+            //Wait for timeout
+            WaitingThread wt = new WaitingThread(clientUDP, this);
+            wt.run();
         } else if (this.currentPlayer.getStatusPaxos().equals("acceptor")) {
             System.out.println("I am acceptor");
         } else if (this.currentPlayer.getStatusPaxos().equals("leader")) {
@@ -383,6 +433,8 @@ public class ChatClient implements Runnable
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
+
+                        listVote[j] = 0;
                     }
                     jsonObject.put("vote_result", jsonArray);
 
@@ -446,7 +498,7 @@ public class ChatClient implements Runnable
             if (this.currentPlayer.getStatusPaxos().equals("leader")) {
                 int i;
                 for (i = 0; i < numberPlayer; i++) {
-                    if (listVote[i] > numberPlayer / 2) {
+                    if (listVote[i] > currentlyPlaying / 2) {
                         try {
                             jsonObject.put("method", "vote_result_civilian");
                             jsonObject.put("vote_status", "1");
@@ -492,6 +544,7 @@ public class ChatClient implements Runnable
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
+                            //listVote[j] = 0;
                         }
                         jsonObject.put("vote_result", jsonArray);
 
@@ -520,7 +573,7 @@ public class ChatClient implements Runnable
         if(Time.equals("day")){
             System.out.println("It is day invoke method vote_civilian");
         } else if (Time.equals("night")){
-            System.out.println("It is day invoke method vote_werewolf");
+            System.out.println("It is night invoke method vote_werewolf");
         }
     }
 
