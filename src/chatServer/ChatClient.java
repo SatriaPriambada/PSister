@@ -519,7 +519,7 @@ public class ChatClient implements Runnable
     public void voteResultCivilian(int[] listVote){
         System.out.println("My leader is " + currentLeader);
         JSONObject jsonObject = new JSONObject();
-        if (tryKill <= 2) {
+        if (tryKill < 2) {
             if (this.currentPlayer.getStatusPaxos().equals("leader")) {
                 int i;
                 for (i = 0; i < numberPlayer; i++) {
@@ -588,6 +588,25 @@ public class ChatClient implements Runnable
             }
         } else {
             tryKill = 0;
+            //send to server to change phase
+            if(Time.equals("day")) {
+                if (currentPlayer.getId() >= numberPlayer - 2) {
+                    currentPlayer.setStatusPaxos("proposer");
+                    try {
+                        prepareProposal();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    System.out.println("Selesai Prepare Proposal");
+                } else {
+                    currentPlayer.setStatusPaxos("acceptor");
+                }
+            } else if (Time.equals("night")) {
+                KPUSelected(currentLeader);
+            }
         }
     }
 
