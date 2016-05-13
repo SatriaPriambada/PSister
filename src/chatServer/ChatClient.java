@@ -219,14 +219,17 @@ public class ChatClient implements Runnable
                                     once = false;
                                 }
 
+                                if(Time.equals("day")) {
+                                    if (currentPlayer.getId() >= numberPlayer - 2) {
+                                        currentPlayer.setStatusPaxos("proposer");
+                                        prepareProposal();
 
-                                if(currentPlayer.getId() >= numberPlayer-2) {
-                                    currentPlayer.setStatusPaxos("proposer");
-                                    prepareProposal();
-
-                                    System.out.println("Selesai Prepare Proposal");
-                                } else {
-                                    currentPlayer.setStatusPaxos("acceptor");
+                                        System.out.println("Selesai Prepare Proposal");
+                                    } else {
+                                        currentPlayer.setStatusPaxos("acceptor");
+                                    }
+                                } else if (Time.equals("night")) {
+                                    KPUSelected(currentLeader);
                                 }
 
                                 break;
