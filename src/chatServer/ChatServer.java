@@ -468,8 +468,10 @@ public class ChatServer implements Runnable {
             jsonObject.put("description", "");
 
             String msg = String.valueOf(jsonObject);
-            // Kirim ke KPU
-            clients[findClient(players[currentLeader].getAddrPort())].send(msg);
+            // Kirim ke semua
+            for(int i=0; i<playerCount; i++){
+                clients[findClient(players[i].getAddrPort())].send(msg);
+            }
         } catch (JSONException e){
             e.printStackTrace();
         }
