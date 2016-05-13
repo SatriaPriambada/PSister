@@ -31,9 +31,11 @@ public class ChatClient implements Runnable
     private int previousLeader = Player.ID_NOT_SET;
     private int numberPlayer;
     private String Time = "day";
-    private int numberWerewolf = numberPlayer/3;
-    private int numberCivilian = numberPlayer * 2/3;
+    private int numberWerewolf;
+    private int numberCivilian;
     private int tryKill = 0;
+    private int initialWerewolf;
+    private int initialCivilian;
     private int currentlyPlaying;
     private boolean once = true;
 
@@ -91,6 +93,7 @@ public class ChatClient implements Runnable
             try {
                 String read = console.readLine();
                 JSONObject jsonObject = new JSONObject();
+                Scanner scanner = new Scanner(System.in);
                 switch (read) {
                     case "server":
                         jsonObject.put("method", "get_server");
@@ -98,7 +101,6 @@ public class ChatClient implements Runnable
                         jsonObject.put("port", "9876");
                         break;
                     case "join":
-                        Scanner scanner = new Scanner(System.in);
                         System.out.print("Username: ");
                         String username = scanner.next();
                         jsonObject.put("method", "join");
@@ -189,23 +191,29 @@ public class ChatClient implements Runnable
                             case "list of clients retrieved":
                                 JSONArray jsonArray = new JSONArray(jsonObject.get("clients").toString());
                                 int i;
+                                currentlyPlaying = 0;
+                                int deadWerewolf= 0;
+                                int deadCivilian = 0;
                                 for (i = 0; i < jsonArray.length(); i++) {
                                     JSONObject json = jsonArray.getJSONObject(i);
                                     players[i].setId(json.getInt("player_id"));
                                     players[i].setAlive(json.getInt("is_alive"));
                                     //if there is player dead check is it werewolf or civilian
-                                    if(  players[i].getAlive() == 0) {
-                                        currentlyPlaying--;
+                                    if(  players[i].getAlive() == Player.DEAD) {
                                         //set the dead player into dead
                                         if ( currentPlayer.getId() == players[i].getId()  ) {
                                             currentPlayer.setRolePlayer("dead");
                                         }
+
+
                                         if (json.getString("role").equals("werewolf")){
-                                            numberWerewolf--;
-                                        } else {
-                                            numberCivilian--;
+                                            deadWerewolf++;
+                                        } else if (json.getString("role").equals("civilian")) {
+                                            deadCivilian++;
                                         }
-                                        currentlyPlaying = numberWerewolf + numberCivilian;
+                                    } else if(players[i].getAlive() == Player.ALIVE){
+                                        currentlyPlaying++;
+
                                     }
                                     players[i].setAddrIp(json.getString("address"));
                                     players[i].setAddrPort(json.getInt("port"));
@@ -214,10 +222,12 @@ public class ChatClient implements Runnable
                                 numberPlayer = i;
                                 if (once){
                                     currentlyPlaying = numberPlayer;
-                                    numberWerewolf = numberPlayer/3;
-                                    numberCivilian = numberPlayer * 2 /3;
+                                    initialWerewolf = numberPlayer/3;
+                                    initialCivilian = numberPlayer * 2 /3;
                                     once = false;
                                 }
+                                numberWerewolf = initialWerewolf - deadWerewolf;
+                                numberCivilian = initialCivilian - deadCivilian;
 
                                 if(Time.equals("day")) {
                                     if (currentPlayer.getId() >= numberPlayer - 2) {
@@ -611,7 +621,7 @@ public class ChatClient implements Runnable
             if(Time.equals("day")){
                 System.out.println("It is day invoke method vote_civilian");
             } else if (Time.equals("night")){
-                System.out.println("It is day invoke method vote_werewolf");
+                System.out.println("It is night invoke method vote_werewolf");
             }
         } else {
             try {
