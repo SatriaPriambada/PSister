@@ -585,6 +585,7 @@ public class ChatServer implements Runnable {
     }
 
     void kpuSelected(int id, int port){
+        clientAddress();
         JSONObject jsonObject = new JSONObject();
 
         try {
